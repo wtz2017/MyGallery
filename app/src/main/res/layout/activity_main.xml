@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:orientation="vertical">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_start_play"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="开始播放" />
+
+        <Button
+            android:id="@+id/btn_select_file"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="选择图片" />
+
+        <Button
+            android:id="@+id/btn_usb_default_img"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.2"
+            android:text="U盘默认图片" />
+
+    </LinearLayout>
+
+    <!-- 在上述父控件LinearLayout中设置 clipChildren = false, clipToPadding = false, 避免边缘的子View放大时被父View遮挡 -->
+    <com.wtz.gallery.view.ScaleGridView
+        android:id="@+id/gridView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:listSelector="@android:color/transparent"
+        android:stretchMode="columnWidth" />
+
+</LinearLayout>
