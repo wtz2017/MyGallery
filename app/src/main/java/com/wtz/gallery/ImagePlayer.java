@@ -16,10 +16,12 @@ import com.daimajia.slider.library.Indicators.PagerIndicator;
 import com.daimajia.slider.library.SliderLayout;
 import com.daimajia.slider.library.SliderTypes.BaseSliderView;
 import com.daimajia.slider.library.SliderTypes.DefaultSliderView;
+import com.daimajia.slider.library.Tricks.ViewPagerEx;
 import com.wtz.gallery.utils.ScreenUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 public class ImagePlayer extends Activity {
@@ -29,9 +31,11 @@ public class ImagePlayer extends Activity {
     private KeyguardManager.KeyguardLock mKeyguardLock;
 
     public static final String KEY_IMAGE_LIST = "key_image_list";
+    public static final String KEY_AUDIO_MAP = "key_audio_map";
     public static final String KEY_IMAGE_INDEX = "key_image_index";
 
     private List<String> mImageList = new ArrayList<>();
+    private Map<String, String> mAudioMap;
     private int mIndex;
     private int mSize;
 
@@ -46,7 +50,7 @@ public class ImagePlayer extends Activity {
     };
     private static final boolean useOnlyOneSliderView = false;
 
-    private static final int DELAY_INTERVAL = 6000;
+    private static final int DELAY_INTERVAL = 10000;
     private static final int MSG_CHANGE_IMAGE = 100;
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -72,6 +76,7 @@ public class ImagePlayer extends Activity {
             return;
         }
 
+        mAudioMap = (Map<String, String>) intent.getSerializableExtra(KEY_AUDIO_MAP);
         mImageList.addAll(list);
         mSize = mImageList.size();
         mIndex = intent.getIntExtra(KEY_IMAGE_INDEX, 0);
@@ -98,6 +103,23 @@ public class ImagePlayer extends Activity {
         mSliderLayout = (SliderLayout) findViewById(R.id.slider);
         mSliderLayout.setDuration(DELAY_INTERVAL);
         mSliderLayout.setIndicatorVisibility(PagerIndicator.IndicatorVisibility.Invisible);
+        mSliderLayout.addOnPageChangeListener(new ViewPagerEx.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+//                Log.d(TAG, "onPageScrolled " + position + ":" + positionOffset);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                Log.d(TAG, "onPageSelected " + position);
+                MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(position)));
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+//                Log.d(TAG, "onPageScrollStateChanged " + state);
+            }
+        });
 
         if (useOnlyOneSliderView) {
             // 正常是有多少图片，就new多少个SliderView加入到SliderLayout
@@ -184,6 +206,14 @@ public class ImagePlayer extends Activity {
         }
     }
 
+    private int getLastIndex(int index) {
+        index--;
+        if (index < 0) {
+            index = mSize - 1;
+        }
+        return index;
+    }
+
     private void nextIndex() {
         mHandler.removeMessages(MSG_CHANGE_IMAGE);
         mIndex++;
@@ -193,12 +223,14 @@ public class ImagePlayer extends Activity {
     }
 
     private void showImage() {
-        Log.d(TAG, "showImage " + mIndex + ": " + mImageList.get(mIndex));
+        String imagePath = mImageList.get(mIndex);
+        Log.d(TAG, "showImage " + mIndex + ": " + imagePath);
         mSliderLayout.setPresetTransformer(TFS[mIndex % TFS.length]);
         if (useOnlyOneSliderView) {
-            mSliderView.image(mImageList.get(mIndex));
+            mSliderView.image(imagePath);
         } else {
-            mSliderLayout.setCurrentPosition(mIndex);
+//            mSliderLayout.setCurrentPosition(mIndex);// 为何会播放指定Index的下一张？
+            mSliderLayout.setCurrentPosition(getLastIndex(mIndex));
         }
         mHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_INTERVAL);
     }

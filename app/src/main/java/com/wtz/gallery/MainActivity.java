@@ -26,8 +26,10 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends Activity implements View.OnClickListener, View.OnKeyListener {
@@ -43,6 +45,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     private ScaleGridView mGridView;
     private GridAdapter mGridAdapter;
     private ArrayList<String> mImageList = new ArrayList<>();
+    private Map<String, String> mAudioMap = new HashMap<>();
 
     private UsbHelper mUsbHelper;
     private static final String DEFAULT_USB_IMG_DIR_NAME = "my_images";
@@ -53,12 +56,21 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     private String mLastImagePath;
 
     private static final Map<String, String> IMAGE_SUFFIX = new HashMap<>();
+
     static {
         IMAGE_SUFFIX.put(".png", ".png");
         IMAGE_SUFFIX.put(".jpg", ".jpg");
         IMAGE_SUFFIX.put(".jpeg", ".jpeg");
         IMAGE_SUFFIX.put(".bmp", ".bmp");
         IMAGE_SUFFIX.put(".gif", ".gif");
+    }
+
+    private static final List<String> AUDIO_SUFFIX = new ArrayList<>();
+
+    static {
+        AUDIO_SUFFIX.add(".mp3");
+        AUDIO_SUFFIX.add(".wma");
+        AUDIO_SUFFIX.add(".wav");
     }
 
     private boolean isFirstShow = true;
@@ -71,6 +83,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
         setContentView(R.layout.activity_main);
 
         EventBus.getDefault().register(this);
+        MusicManager.getInstance().init(this);
+        MusicManager.getInstance().setLooping(true);
 
         mUsbHelper = new UsbHelper();
         mUsbHelper.initUsb(this);
@@ -158,9 +172,24 @@ public class MainActivity extends Activity implements View.OnClickListener, View
                 if (index > 0 && index < path.length() - 1) {
                     suffix = path.substring(index);
                     if (IMAGE_SUFFIX.containsKey(suffix.toLowerCase())) {
-                        mImageList.add(fileUri(path));
+                        String fileUri = fileUri(path);
+                        mImageList.add(fileUri);
+                        findAudioFile(fileUri, path.substring(0, index));
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * 解析同名音频文件
+     */
+    private void findAudioFile(String key, String nameNoSuffix) {
+        File file;
+        for (String audioSuffix : AUDIO_SUFFIX) {
+            if ((file = new File(nameNoSuffix + audioSuffix)).exists()
+                    && file.isFile()) {
+                mAudioMap.put(key, file.getAbsolutePath());
             }
         }
     }
@@ -205,6 +234,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
+        MusicManager.getInstance().destroy();
         mUsbHelper.unregisterUsbReceiver(this);
         EventBus.getDefault().unregister(this);
         mHandler.removeCallbacksAndMessages(null);
@@ -254,11 +284,13 @@ public class MainActivity extends Activity implements View.OnClickListener, View
         }
         Intent i = new Intent(this, ImagePlayer.class);
         i.putStringArrayListExtra(ImagePlayer.KEY_IMAGE_LIST, mImageList);
+        i.putExtra(ImagePlayer.KEY_AUDIO_MAP, (Serializable) mAudioMap);
         i.putExtra(ImagePlayer.KEY_IMAGE_INDEX, index);
         startActivity(i);
     }
 
     private int mSelectRequestCode;
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onChooseResult(FileChooser.ChooseResult chooseResult) {
         Log.d(TAG, "onChooseResult requestCode=" + chooseResult.getRequestCode()
