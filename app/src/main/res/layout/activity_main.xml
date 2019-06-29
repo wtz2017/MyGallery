@@ -2,11 +2,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorPrimaryDark"
     android:clipChildren="false"
-    android:clipToPadding="false"
     android:orientation="vertical">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout
+        android:id="@+id/head"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
@@ -16,21 +17,27 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="开始播放" />
+            android:background="@drawable/button_bg"
+            android:text="开始播放"
+            android:textColor="#ffffff" />
 
         <Button
             android:id="@+id/btn_select_file"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="选择图片" />
+            android:background="@drawable/button_bg"
+            android:text="选择图片"
+            android:textColor="#ffffff" />
 
         <Button
             android:id="@+id/btn_usb_default_img"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1.2"
-            android:text="U盘默认图片" />
+            android:background="@drawable/button_bg"
+            android:text="U盘默认图片"
+            android:textColor="#ffffff" />
 
     </LinearLayout>
 
@@ -39,8 +46,9 @@
         android:id="@+id/gridView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="10dp"
+        android:layout_marginTop="10dp"
+        android:clipChildren="false"
+        android:gravity="center"
         android:listSelector="@android:color/transparent"
         android:stretchMode="columnWidth" />
-
 </LinearLayout>

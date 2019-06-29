@@ -13,6 +13,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.TabWidget;
 import android.widget.Toast;
 
 import com.wtz.gallery.adapter.GridAdapter;
@@ -40,8 +41,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     private Button mUsbDefaultButton;
 
     private static final int GRIDVIEW_COLUMNS = 4;
-    private static final int GRIDVIEW_VERTICAL_SPACE_DIP = 4;
-    private static final int GRIDVIEW_HORIZONTAL_SPACE_DIP = 4;
+    private static final int GRIDVIEW_VERTICAL_SPACE_DIP = 12;
+    private static final int GRIDVIEW_HORIZONTAL_SPACE_DIP = 12;
     private ScaleGridView mGridView;
     private GridAdapter mGridAdapter;
     private ArrayList<String> mImageList = new ArrayList<>();
@@ -136,13 +137,35 @@ public class MainActivity extends Activity implements View.OnClickListener, View
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Log.d(TAG, "onItemSelected position=" + position);
+                mGridView.smoothScrollToPositionFromTop(position, 200);
                 // 调用此自定义view里的方法，解决Item放大后，id靠前的Item放大后会被后面的遮盖问题
-                mGridView.onItemSelected(parent, view, position, id);
+                mGridAdapter.selectView(view);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 Log.d(TAG, "onNothingSelected");
+            }
+        });
+        mGridView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                Log.d(TAG, "onFocusChange hasFocus=" + hasFocus);
+                if (hasFocus) {
+//                    mGridView.setSelection(0);
+//                    mGridView.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
+                    mGridView.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mGridView.hasFocus()) {
+                                mGridAdapter.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
+//                                mGridView.selectView(mGridView.getSelectedView());
+                            }
+                        }
+                    }, 200);
+                } else {
+                    mGridAdapter.selectView(null);
+                }
             }
         });
         mGridView.setOnKeyListener(this);
@@ -256,6 +279,23 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         Log.d(TAG, "onKey " + keyCode + "," + event.getAction());
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if (v.getId() == R.id.btn_start_play) {
+                    mGridView.setSelection(0);
+                    mGridView.requestFocus();
+                    return true;
+                } else if (v.getId() == R.id.btn_select_file) {
+                    mGridView.setSelection(1);
+                    mGridView.requestFocus();
+                    return true;
+                } else if (v.getId() == R.id.btn_usb_default_img) {
+                    mGridView.setSelection(3);
+                    mGridView.requestFocus();
+                    return true;
+                }
+                break;
+        }
         return false;
     }
 

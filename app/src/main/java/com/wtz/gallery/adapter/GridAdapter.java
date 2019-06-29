@@ -1,6 +1,9 @@
 package com.wtz.gallery.adapter;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +24,8 @@ public class GridAdapter extends BaseAdapter {
     private List<String> mDataList;
     private int mItemWidth;
     private AbsListView.LayoutParams mItemLayoutParams;
+
+    private View mLastView = null;
 
     public GridAdapter(Context context, List<String> dataList, int itemWidth) {
         mContext = context;
@@ -61,6 +66,7 @@ public class GridAdapter extends BaseAdapter {
             }
             convertView.setLayoutParams(mItemLayoutParams);
             holder.imageView = (ImageView) convertView.findViewById(R.id.iv_img);
+            holder.cover = convertView.findViewById(R.id.v_cover);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
@@ -77,8 +83,47 @@ public class GridAdapter extends BaseAdapter {
         return convertView;
     }
 
+    public void selectView(View view) {
+        Log.d(TAG, "scaleDown: mLastView == view? " + (mLastView == view));
+        if (mLastView == view) {
+            return;
+        }
+        scaleDown(mLastView);// 缩小
+        scaleUp(view);// 扩大
+        mLastView = view;
+    }
+
+    private void scaleUp(View view) {
+        Log.d(TAG, "scaleUp: " + view);
+        if (view == null) return;
+
+        ViewHolder holder = (ViewHolder) view.getTag();
+        holder.cover.setVisibility(View.VISIBLE);
+
+        AnimatorSet animSet = new AnimatorSet();
+        float[] values = new float[]{1.0f, 1.1f};
+        animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
+                ObjectAnimator.ofFloat(view, "scaleY", values));
+        animSet.setDuration(10).start();
+    }
+
+    private void scaleDown(View view) {
+        Log.d(TAG, "scaleDown: " + view);
+        if (view == null) return;
+
+        ViewHolder holder = (ViewHolder) view.getTag();
+        holder.cover.setVisibility(View.GONE);
+
+        AnimatorSet animSet = new AnimatorSet();
+        float[] values = new float[]{1.1f, 1.0f};
+        animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
+                ObjectAnimator.ofFloat(view, "scaleY", values));
+        animSet.setDuration(10).start();
+    }
+
     class ViewHolder {
         ImageView imageView;
+        View cover;
     }
 
 }
