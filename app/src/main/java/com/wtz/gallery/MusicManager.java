@@ -37,7 +37,7 @@ public class MusicManager {
 
     public void init(Context context) {
         Log.d(TAG, "init isInited=" + isInited);
-        if (isInited) {
+        if (isInited && mBound) {
             return;
         }
 
@@ -95,6 +95,7 @@ public class MusicManager {
             mContext.unbindService(mConnection);
             mBound = false;
         }
+        mCurrentPath = null;
         mService = null;
     }
 

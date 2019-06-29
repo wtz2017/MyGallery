@@ -84,6 +84,9 @@ public class ImagePlayer extends Activity {
             mIndex = 0;
         }
 
+        MusicManager.getInstance().init(this);
+        MusicManager.getInstance().setLooping(true);
+
         // 解锁屏幕，允许在锁屏上显示
         // 对于小米手机，还需要用户在设置里找到本应用权限允许在锁屏上显示
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
@@ -169,6 +172,7 @@ public class ImagePlayer extends Activity {
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
+        MusicManager.getInstance().destroy();
         if (mWakeLock != null) {
             mWakeLock.release();// 取消屏幕常亮
         }

@@ -84,8 +84,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
         setContentView(R.layout.activity_main);
 
         EventBus.getDefault().register(this);
-        MusicManager.getInstance().init(this);
-        MusicManager.getInstance().setLooping(true);
 
         mUsbHelper = new UsbHelper();
         mUsbHelper.initUsb(this);
@@ -257,7 +255,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
-        MusicManager.getInstance().destroy();
         mUsbHelper.unregisterUsbReceiver(this);
         EventBus.getDefault().unregister(this);
         mHandler.removeCallbacksAndMessages(null);
