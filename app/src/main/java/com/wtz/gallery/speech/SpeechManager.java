@@ -156,7 +156,7 @@ public class SpeechManager {
         // 设置合成的音量，0-9 ，默认 5
         params.put(SpeechSynthesizer.PARAM_VOLUME, "9");
         // 设置合成的语速，0-9 ，默认 5
-        params.put(SpeechSynthesizer.PARAM_SPEED, "5");
+        params.put(SpeechSynthesizer.PARAM_SPEED, "3");
         // 设置合成的语调，0-9 ，默认 5
         params.put(SpeechSynthesizer.PARAM_PITCH, "5");
 

@@ -44,7 +44,7 @@ public class ImagePlayer extends Activity {
     private int mCurrentPage = -1;
     private String mCurrentName;
     private int mCurrentSpeakCount;
-    private static final int MAX_SPEAK_COUNT = 2;
+    private static final int MAX_SPEAK_COUNT = 3;
 
     private SliderLayout mSliderLayout;
     private DefaultSliderView mSliderView;
@@ -57,7 +57,7 @@ public class ImagePlayer extends Activity {
     };
     private static final boolean useOnlyOneSliderView = false;
 
-    private static final int DELAY_INTERVAL = 10000;
+    private static final int DELAY_INTERVAL = 12000;
     private static final int MSG_CHANGE_IMAGE = 100;
     private static final int MSG_RECOVERY_AUTO_PLAY = 101;
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -102,8 +102,8 @@ public class ImagePlayer extends Activity {
                         String utterance_id = bundle.getString(MessageListener.BUNDLE_KEY_UTTERANCE_ID);
                         if (utterance_id != null && utterance_id.equals(mCurrentName)) {
                             if (mCurrentSpeakCount < MAX_SPEAK_COUNT) {
-                                SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
-                                mCurrentSpeakCount++;
+                                mSliderLayout.removeCallbacks(mSpeakRunnable);
+                                mSliderLayout.postDelayed(mSpeakRunnable, 300);
                             } else {
                                 MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
                             }
@@ -219,6 +219,7 @@ public class ImagePlayer extends Activity {
         public void run() {
             // 等图片播放出来后再播报
             SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
+            mCurrentSpeakCount++;
         }
     };
 
