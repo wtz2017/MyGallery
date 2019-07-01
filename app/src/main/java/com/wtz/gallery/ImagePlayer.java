@@ -226,7 +226,11 @@ public class ImagePlayer extends Activity {
         String path = mImageList.get(position);
         int slashIndex = path.lastIndexOf(File.separator);
         int suffixIndex = path.lastIndexOf(".");
-        return path.substring(slashIndex + 1, suffixIndex);
+        String name = path.substring(slashIndex + 1, suffixIndex);
+        if ("知更鸟".equals(name)) {
+            name = "知更(geng1)鸟";
+        }
+        return name;
     }
 
     @Override
