@@ -42,6 +42,9 @@ public class ImagePlayer extends Activity {
     private int mIndex;
     private int mSize;
     private int mCurrentPage;
+    private String mCurrentName;
+    private int mCurrentSpeakCount;
+    private static final int MAX_SPEAK_COUNT = 2;
 
     private SliderLayout mSliderLayout;
     private DefaultSliderView mSliderView;
@@ -86,8 +89,13 @@ public class ImagePlayer extends Activity {
                 case MessageListener.MSG_SPEECH_PROGRESS_CHANGED:
                     break;
                 case MessageListener.MSG_SPEECH_FINISH:
-                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg);
-                    MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg + ", mCurrentSpeakCount=" + mCurrentSpeakCount);
+                    if (mCurrentSpeakCount < MAX_SPEAK_COUNT) {
+                        SpeechManager.getInstance().speak(mCurrentName);
+                        mCurrentSpeakCount++;
+                    } else {
+                        MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                    }
                     break;
                 case MessageListener.MSG_ERROR:
                     Log.d(TAG, "mSpeechHandler MSG_ERROR: " + msg);
@@ -148,12 +156,18 @@ public class ImagePlayer extends Activity {
             @Override
             public void onPageSelected(int position) {
                 Log.d(TAG, "onPageSelected " + position);
+                MusicManager.getInstance().stop();
                 mCurrentPage = position;
-                String path = mImageList.get(position);
-                int slashIndex = path.lastIndexOf(File.separator);
-                int suffixIndex = path.lastIndexOf(".");
-                String name = path.substring(slashIndex + 1, suffixIndex);
-                SpeechManager.getInstance().speak(name);
+                mCurrentSpeakCount = 0;
+                mCurrentName = getImageName(position);
+                mSliderLayout.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        // 等图片播放出来后再播报
+                        SpeechManager.getInstance().speak(mCurrentName);
+                        mCurrentSpeakCount++;
+                    }
+                }, 1000);
             }
 
             @Override
@@ -179,6 +193,13 @@ public class ImagePlayer extends Activity {
         }
 
         showImage();
+    }
+
+    private String getImageName(int position) {
+        String path = mImageList.get(position);
+        int slashIndex = path.lastIndexOf(File.separator);
+        int suffixIndex = path.lastIndexOf(".");
+        return path.substring(slashIndex + 1, suffixIndex);
     }
 
     @Override
