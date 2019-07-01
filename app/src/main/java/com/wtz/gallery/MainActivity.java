@@ -7,16 +7,18 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.TabWidget;
 import android.widget.Toast;
 
 import com.wtz.gallery.adapter.GridAdapter;
+import com.wtz.gallery.speech.MessageListener;
+import com.wtz.gallery.speech.SpeechManager;
 import com.wtz.gallery.utils.FileChooser;
 import com.wtz.gallery.utils.ScreenUtils;
 import com.wtz.gallery.utils.UsbHelper;
@@ -75,6 +77,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
     }
 
     private boolean isFirstShow = true;
+
     private Handler mHandler = new Handler(Looper.getMainLooper());
 
     @Override
@@ -238,6 +241,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
             }, 100);
         }
         super.onResume();
+    }
+
+    private void testSpeechManagerSpeek() {
+        SpeechManager.getInstance().speak("开始测试吧");
     }
 
     @Override

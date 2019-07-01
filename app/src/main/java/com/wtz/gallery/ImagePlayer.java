@@ -17,8 +17,11 @@ import com.daimajia.slider.library.SliderLayout;
 import com.daimajia.slider.library.SliderTypes.BaseSliderView;
 import com.daimajia.slider.library.SliderTypes.DefaultSliderView;
 import com.daimajia.slider.library.Tricks.ViewPagerEx;
+import com.wtz.gallery.speech.MessageListener;
+import com.wtz.gallery.speech.SpeechManager;
 import com.wtz.gallery.utils.ScreenUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,7 @@ public class ImagePlayer extends Activity {
     private Map<String, String> mAudioMap;
     private int mIndex;
     private int mSize;
+    private int mCurrentPage;
 
     private SliderLayout mSliderLayout;
     private DefaultSliderView mSliderView;
@@ -64,6 +68,34 @@ public class ImagePlayer extends Activity {
         }
     };
 
+    private Handler mSpeechHandler = new Handler(Looper.getMainLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MessageListener.MSG_SYNTHESIZE_START:
+                    Log.d(TAG, "mSpeechHandler MSG_SYNTHESIZE_START: " + msg);
+                    break;
+                case MessageListener.MSG_SYNTHESIZE_DATA_ARRIVED:
+                    break;
+                case MessageListener.MSG_SYNTHESIZE_FINISH:
+                    Log.d(TAG, "mSpeechHandler MSG_SYNTHESIZE_FINISH: " + msg);
+                    break;
+                case MessageListener.MSG_SPEECH_START:
+                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_START: " + msg);
+                    break;
+                case MessageListener.MSG_SPEECH_PROGRESS_CHANGED:
+                    break;
+                case MessageListener.MSG_SPEECH_FINISH:
+                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg);
+                    MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                    break;
+                case MessageListener.MSG_ERROR:
+                    Log.d(TAG, "mSpeechHandler MSG_ERROR: " + msg);
+                    break;
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -84,6 +116,7 @@ public class ImagePlayer extends Activity {
             mIndex = 0;
         }
 
+        SpeechManager.getInstance().init(this, mSpeechHandler);
         MusicManager.getInstance().init(this);
         MusicManager.getInstance().setLooping(true);
 
@@ -115,7 +148,12 @@ public class ImagePlayer extends Activity {
             @Override
             public void onPageSelected(int position) {
                 Log.d(TAG, "onPageSelected " + position);
-                MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(position)));
+                mCurrentPage = position;
+                String path = mImageList.get(position);
+                int slashIndex = path.lastIndexOf(File.separator);
+                int suffixIndex = path.lastIndexOf(".");
+                String name = path.substring(slashIndex + 1, suffixIndex);
+                SpeechManager.getInstance().speak(name);
             }
 
             @Override
@@ -172,10 +210,12 @@ public class ImagePlayer extends Activity {
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
+        SpeechManager.getInstance().destroy();
         MusicManager.getInstance().destroy();
         if (mWakeLock != null) {
             mWakeLock.release();// 取消屏幕常亮
         }
+        mSpeechHandler.removeCallbacksAndMessages(null);
         mHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
