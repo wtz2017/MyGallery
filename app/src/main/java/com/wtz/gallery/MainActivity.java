@@ -243,10 +243,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
         super.onResume();
     }
 
-    private void testSpeechManagerSpeek() {
-        SpeechManager.getInstance().speak("开始测试吧");
-    }
-
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause");

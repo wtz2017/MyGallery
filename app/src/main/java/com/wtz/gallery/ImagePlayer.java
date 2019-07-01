@@ -41,7 +41,7 @@ public class ImagePlayer extends Activity {
     private Map<String, String> mAudioMap;
     private int mIndex;
     private int mSize;
-    private int mCurrentPage;
+    private int mCurrentPage = -1;
     private String mCurrentName;
     private int mCurrentSpeakCount;
     private static final int MAX_SPEAK_COUNT = 2;
@@ -59,6 +59,7 @@ public class ImagePlayer extends Activity {
 
     private static final int DELAY_INTERVAL = 10000;
     private static final int MSG_CHANGE_IMAGE = 100;
+    private static final int MSG_RECOVERY_AUTO_PLAY = 101;
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
@@ -66,6 +67,10 @@ public class ImagePlayer extends Activity {
                 case MSG_CHANGE_IMAGE:
                     nextIndex();
                     showImage();
+                    break;
+                case MSG_RECOVERY_AUTO_PLAY:
+                    mSliderLayout.startAutoCycle();
+                    mHandler.removeMessages(MSG_RECOVERY_AUTO_PLAY);
                     break;
             }
         }
@@ -89,12 +94,20 @@ public class ImagePlayer extends Activity {
                 case MessageListener.MSG_SPEECH_PROGRESS_CHANGED:
                     break;
                 case MessageListener.MSG_SPEECH_FINISH:
-                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg + ", mCurrentSpeakCount=" + mCurrentSpeakCount);
-                    if (mCurrentSpeakCount < MAX_SPEAK_COUNT) {
-                        SpeechManager.getInstance().speak(mCurrentName);
-                        mCurrentSpeakCount++;
-                    } else {
-                        MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                    Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg
+                            + ", mCurrentSpeakCount=" + mCurrentSpeakCount
+                            + ", mCurrentName=" + mCurrentName);
+                    if (msg != null && msg.obj != null) {
+                        Bundle bundle = (Bundle) msg.obj;
+                        String utterance_id = bundle.getString(MessageListener.BUNDLE_KEY_UTTERANCE_ID);
+                        if (utterance_id != null && utterance_id.equals(mCurrentName)) {
+                            if (mCurrentSpeakCount < MAX_SPEAK_COUNT) {
+                                SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
+                                mCurrentSpeakCount++;
+                            } else {
+                                MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                            }
+                        }
                     }
                     break;
                 case MessageListener.MSG_ERROR:
@@ -127,54 +140,35 @@ public class ImagePlayer extends Activity {
         SpeechManager.getInstance().init(this, mSpeechHandler);
         MusicManager.getInstance().init(this);
         MusicManager.getInstance().setLooping(true);
+        setScreen();
 
+        setContentView(R.layout.activity_image_player);
+
+        mSliderLayout = (SliderLayout) findViewById(R.id.slider);
+        initSliderLayout();
+
+        showImage();
+    }
+
+    private void setScreen() {
         // 解锁屏幕，允许在锁屏上显示
         // 对于小米手机，还需要用户在设置里找到本应用权限允许在锁屏上显示
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
 
         // 用来控制屏幕常亮
-        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        final PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         mWakeLock = pm.newWakeLock(
                 PowerManager.ACQUIRE_CAUSES_WAKEUP |
                         PowerManager.SCREEN_DIM_WAKE_LOCK |
                         PowerManager.ON_AFTER_RELEASE,
                 this.getClass().getCanonicalName());
         mWakeLock.acquire();// 保持屏幕常亮
+    }
 
-        setContentView(R.layout.activity_image_player);
-
-        mSliderLayout = (SliderLayout) findViewById(R.id.slider);
+    private void initSliderLayout() {
         mSliderLayout.setDuration(DELAY_INTERVAL);
         mSliderLayout.setIndicatorVisibility(PagerIndicator.IndicatorVisibility.Invisible);
-        mSliderLayout.addOnPageChangeListener(new ViewPagerEx.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-//                Log.d(TAG, "onPageScrolled " + position + ":" + positionOffset);
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                Log.d(TAG, "onPageSelected " + position);
-                MusicManager.getInstance().stop();
-                mCurrentPage = position;
-                mCurrentSpeakCount = 0;
-                mCurrentName = getImageName(position);
-                mSliderLayout.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        // 等图片播放出来后再播报
-                        SpeechManager.getInstance().speak(mCurrentName);
-                        mCurrentSpeakCount++;
-                    }
-                }, 1000);
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-//                Log.d(TAG, "onPageScrollStateChanged " + state);
-            }
-        });
 
         if (useOnlyOneSliderView) {
             // 正常是有多少图片，就new多少个SliderView加入到SliderLayout
@@ -192,8 +186,41 @@ public class ImagePlayer extends Activity {
             }
         }
 
-        showImage();
+        // 放在mSliderLayout.addSlider之后，避免回调多次onPageSelected
+        mSliderLayout.addOnPageChangeListener(new ViewPagerEx.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+//                Log.d(TAG, "onPageScrolled " + position + ":" + positionOffset);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                Log.d(TAG, "onPageSelected " + position);
+                if (position != mCurrentPage) {
+                    mCurrentPage = position;
+                    mCurrentName = getImageName(position);
+                    mCurrentSpeakCount = 0;
+                    MusicManager.getInstance().stop();
+                    SpeechManager.getInstance().stop();
+                    mSliderLayout.removeCallbacks(mSpeakRunnable);
+                    mSliderLayout.postDelayed(mSpeakRunnable, 1000);
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+//                Log.d(TAG, "onPageScrollStateChanged " + state);
+            }
+        });
     }
+
+    private Runnable mSpeakRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 等图片播放出来后再播报
+            SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
+        }
+    };
 
     private String getImageName(int position) {
         String path = mImageList.get(position);
@@ -252,15 +279,23 @@ public class ImagePlayer extends Activity {
         Log.d(TAG, "onKeyUp " + keyCode + "," + event.getAction());
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
+                delayAutoCycle();
                 lastIndex();
                 showImage();
                 break;
             case KeyEvent.KEYCODE_DPAD_RIGHT:
+                delayAutoCycle();
                 nextIndex();
                 showImage();
                 break;
         }
         return super.onKeyUp(keyCode, event);
+    }
+
+    private void delayAutoCycle() {
+        mSliderLayout.stopAutoCycle();
+        mHandler.removeMessages(MSG_RECOVERY_AUTO_PLAY);
+        mHandler.sendEmptyMessageDelayed(MSG_RECOVERY_AUTO_PLAY, DELAY_INTERVAL);
     }
 
     private void lastIndex() {

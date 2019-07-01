@@ -191,14 +191,14 @@ public class SpeechManager {
      * 获取音频流的方式见SaveFileActivity及FileSaveListener
      * 需要合成的文本text的长度不能超过1024个GBK字节。
      */
-    public void speak(String text) {
+    public void speak(String text, String utteranceId) {
         if (!isInitSuccess) {
             return;
         }
         // 合成前可以修改参数：
         // Map<String, String> params = getParams();
         // mSynthesizer.setParams(params);
-        int result = mSynthesizer.speak(text);
+        int result = mSynthesizer.speak(text, utteranceId);
         checkResult(result, "speak");
     }
 
