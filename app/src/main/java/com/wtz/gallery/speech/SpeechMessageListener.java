@@ -13,9 +13,9 @@ import com.baidu.tts.client.SpeechSynthesizerListener;
  * Created by fujiayi on 2017/5/19.
  */
 
-public class MessageListener implements SpeechSynthesizerListener {
+public class SpeechMessageListener implements SpeechSynthesizerListener {
 
-    private static final String TAG = "MessageListener";
+    private static final String TAG = "SpeechMessageListener";
 
     private Handler handler;
 
@@ -33,7 +33,7 @@ public class MessageListener implements SpeechSynthesizerListener {
     public static final String BUNDLE_KEY_ERROR_CODE = "error_code";
     public static final String BUNDLE_KEY_ERROR_DESC = "error_desc";
 
-    public MessageListener(Handler handler) {
+    public SpeechMessageListener(Handler handler) {
         this.handler = handler;
     }
 

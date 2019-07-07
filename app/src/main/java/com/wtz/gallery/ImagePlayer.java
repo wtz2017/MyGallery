@@ -17,7 +17,7 @@ import com.daimajia.slider.library.SliderLayout;
 import com.daimajia.slider.library.SliderTypes.BaseSliderView;
 import com.daimajia.slider.library.SliderTypes.DefaultSliderView;
 import com.daimajia.slider.library.Tricks.ViewPagerEx;
-import com.wtz.gallery.speech.MessageListener;
+import com.wtz.gallery.speech.SpeechMessageListener;
 import com.wtz.gallery.speech.SpeechManager;
 import com.wtz.gallery.utils.ScreenUtils;
 
@@ -37,6 +37,8 @@ public class ImagePlayer extends Activity {
     public static final String KEY_AUDIO_MAP = "key_audio_map";
     public static final String KEY_IMAGE_INDEX = "key_image_index";
 
+    private static final String PATH_KEY_NO_VOICE = "no_voice";
+
     private List<String> mImageList = new ArrayList<>();
     private Map<String, String> mAudioMap;
     private int mIndex;
@@ -44,7 +46,7 @@ public class ImagePlayer extends Activity {
     private int mCurrentPage = -1;
     private String mCurrentName;
     private int mCurrentSpeakCount;
-    private static final int MAX_SPEAK_COUNT = 3;
+    private static final int MAX_SPEAK_COUNT = 2;
 
     private SliderLayout mSliderLayout;
     private DefaultSliderView mSliderView;
@@ -57,10 +59,13 @@ public class ImagePlayer extends Activity {
     };
     private static final boolean useOnlyOneSliderView = false;
 
-    private static final int DELAY_INTERVAL = 12000;
+    private static final int DELAY_CHANGE_IMAGE_INTERVAL = 12000;
+    private static final int RECOVERY_AUTO_PLAY_INTERVAL = 15000;
     private static final int MSG_CHANGE_IMAGE = 100;
-    private static final int MSG_RECOVERY_AUTO_PLAY = 101;
-    private Handler mHandler = new Handler(Looper.getMainLooper()) {
+    private static final int MSG_RECOVERY_AUTO_CHANGE_IMAGE = 101;
+    private static final int MSG_SPEECH = 102;
+    private static final int MSG_PLAY_AUDIO = 103;
+    private Handler mTotalControlHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -68,9 +73,16 @@ public class ImagePlayer extends Activity {
                     nextIndex();
                     showImage();
                     break;
-                case MSG_RECOVERY_AUTO_PLAY:
+                case MSG_RECOVERY_AUTO_CHANGE_IMAGE:
                     mSliderLayout.startAutoCycle();
-                    mHandler.removeMessages(MSG_RECOVERY_AUTO_PLAY);
+                    mTotalControlHandler.removeMessages(MSG_RECOVERY_AUTO_CHANGE_IMAGE);
+                    break;
+                case MSG_SPEECH:
+                    SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
+                    mCurrentSpeakCount++;
+                    break;
+                case MSG_PLAY_AUDIO:
+                    MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
                     break;
             }
         }
@@ -80,42 +92,61 @@ public class ImagePlayer extends Activity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case MessageListener.MSG_SYNTHESIZE_START:
+                case SpeechMessageListener.MSG_SYNTHESIZE_START:
                     Log.d(TAG, "mSpeechHandler MSG_SYNTHESIZE_START: " + msg);
                     break;
-                case MessageListener.MSG_SYNTHESIZE_DATA_ARRIVED:
+                case SpeechMessageListener.MSG_SYNTHESIZE_DATA_ARRIVED:
                     break;
-                case MessageListener.MSG_SYNTHESIZE_FINISH:
+                case SpeechMessageListener.MSG_SYNTHESIZE_FINISH:
                     Log.d(TAG, "mSpeechHandler MSG_SYNTHESIZE_FINISH: " + msg);
                     break;
-                case MessageListener.MSG_SPEECH_START:
+                case SpeechMessageListener.MSG_SPEECH_START:
                     Log.d(TAG, "mSpeechHandler MSG_SPEECH_START: " + msg);
                     break;
-                case MessageListener.MSG_SPEECH_PROGRESS_CHANGED:
+                case SpeechMessageListener.MSG_SPEECH_PROGRESS_CHANGED:
                     break;
-                case MessageListener.MSG_SPEECH_FINISH:
+                case SpeechMessageListener.MSG_SPEECH_FINISH:
                     Log.d(TAG, "mSpeechHandler MSG_SPEECH_FINISH: " + msg
                             + ", mCurrentSpeakCount=" + mCurrentSpeakCount
                             + ", mCurrentName=" + mCurrentName);
                     if (msg != null && msg.obj != null) {
                         Bundle bundle = (Bundle) msg.obj;
-                        String utterance_id = bundle.getString(MessageListener.BUNDLE_KEY_UTTERANCE_ID);
+                        String utterance_id = bundle.getString(SpeechMessageListener.BUNDLE_KEY_UTTERANCE_ID);
                         if (utterance_id != null && utterance_id.equals(mCurrentName)) {
                             if (mCurrentSpeakCount < MAX_SPEAK_COUNT) {
-                                mSliderLayout.removeCallbacks(mSpeakRunnable);
-                                mSliderLayout.postDelayed(mSpeakRunnable, 300);
+                                speechDelay(300);
                             } else {
-                                MusicManager.getInstance().openAudioPath(mAudioMap.get(mImageList.get(mCurrentPage)));
+                                playAudioDelay(300);
                             }
                         }
                     }
                     break;
-                case MessageListener.MSG_ERROR:
+                case SpeechMessageListener.MSG_ERROR:
                     Log.d(TAG, "mSpeechHandler MSG_ERROR: " + msg);
                     break;
             }
         }
     };
+
+    private void speechDelay(long delayMillis) {
+        stopSpeech();
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_SPEECH, delayMillis);
+    }
+
+    private void stopSpeech() {
+        mTotalControlHandler.removeMessages(MSG_SPEECH);
+        SpeechManager.getInstance().stop();
+    }
+
+    private void playAudioDelay(long delayMillis) {
+        stopAudio();
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_PLAY_AUDIO, delayMillis);
+    }
+
+    private void stopAudio() {
+        mTotalControlHandler.removeMessages(MSG_PLAY_AUDIO);
+        MusicManager.getInstance().stop();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +170,9 @@ public class ImagePlayer extends Activity {
 
         SpeechManager.getInstance().init(this, mSpeechHandler);
         MusicManager.getInstance().init(this);
-        MusicManager.getInstance().setLooping(true);
+        MusicManager.getInstance().setRepeatCount(2);
+        MusicManager.getInstance().setRepeatInterval(600);
+
         setScreen();
 
         setContentView(R.layout.activity_image_player);
@@ -167,7 +200,7 @@ public class ImagePlayer extends Activity {
     }
 
     private void initSliderLayout() {
-        mSliderLayout.setDuration(DELAY_INTERVAL);
+        mSliderLayout.setDuration(DELAY_CHANGE_IMAGE_INTERVAL);
         mSliderLayout.setIndicatorVisibility(PagerIndicator.IndicatorVisibility.Invisible);
 
         if (useOnlyOneSliderView) {
@@ -197,13 +230,19 @@ public class ImagePlayer extends Activity {
             public void onPageSelected(int position) {
                 Log.d(TAG, "onPageSelected " + position);
                 if (position != mCurrentPage) {
+                    stopSpeech();
+                    stopAudio();
+
                     mCurrentPage = position;
                     mCurrentName = getImageName(position);
                     mCurrentSpeakCount = 0;
-                    MusicManager.getInstance().stop();
-                    SpeechManager.getInstance().stop();
-                    mSliderLayout.removeCallbacks(mSpeakRunnable);
-                    mSliderLayout.postDelayed(mSpeakRunnable, 1000);
+
+                    boolean canSpeech = !mImageList.get(mCurrentPage).contains(PATH_KEY_NO_VOICE);
+                    if (canSpeech) {
+                        speechDelay(1000);
+                    } else {
+                        playAudioDelay(1000);
+                    }
                 }
             }
 
@@ -214,15 +253,6 @@ public class ImagePlayer extends Activity {
         });
     }
 
-    private Runnable mSpeakRunnable = new Runnable() {
-        @Override
-        public void run() {
-            // 等图片播放出来后再播报
-            SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
-            mCurrentSpeakCount++;
-        }
-    };
-
     private String getImageName(int position) {
         String path = mImageList.get(position);
         int slashIndex = path.lastIndexOf(File.separator);
@@ -232,6 +262,76 @@ public class ImagePlayer extends Activity {
             name = "知更(geng1)鸟";
         }
         return name;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        Log.d(TAG, "onKeyDown " + keyCode + "," + event.getAction());
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        Log.d(TAG, "onKeyUp " + keyCode + "," + event.getAction());
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+                || keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+            delayAutoCycle();
+        }
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                lastIndex();
+                showImage();
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                nextIndex();
+                showImage();
+                break;
+        }
+        return super.onKeyUp(keyCode, event);
+    }
+
+    private void delayAutoCycle() {
+        mSliderLayout.stopAutoCycle();
+        mTotalControlHandler.removeMessages(MSG_RECOVERY_AUTO_CHANGE_IMAGE);
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_RECOVERY_AUTO_CHANGE_IMAGE, RECOVERY_AUTO_PLAY_INTERVAL);
+    }
+
+    private void lastIndex() {
+        mTotalControlHandler.removeMessages(MSG_CHANGE_IMAGE);
+        mIndex--;
+        if (mIndex < 0) {
+            mIndex = mSize - 1;
+        }
+    }
+
+    private int getLastIndex(int index) {
+        index--;
+        if (index < 0) {
+            index = mSize - 1;
+        }
+        return index;
+    }
+
+    private void nextIndex() {
+        mTotalControlHandler.removeMessages(MSG_CHANGE_IMAGE);
+        mIndex++;
+        if (mIndex > mSize - 1) {
+            mIndex = 0;
+        }
+    }
+
+    private void showImage() {
+        String imagePath = mImageList.get(mIndex);
+        Log.d(TAG, "showImage " + mIndex + ": " + imagePath);
+        mSliderLayout.setPresetTransformer(TFS[mIndex % TFS.length]);
+        if (useOnlyOneSliderView) {
+            mSliderView.image(imagePath);
+        } else {
+//            mSliderLayout.setCurrentPosition(mIndex);// 为何会播放指定Index的下一张？
+            mSliderLayout.setCurrentPosition(getLastIndex(mIndex));
+        }
+//        mTotalControlHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_CHANGE_IMAGE_INTERVAL);
     }
 
     @Override
@@ -269,75 +369,8 @@ public class ImagePlayer extends Activity {
             mWakeLock.release();// 取消屏幕常亮
         }
         mSpeechHandler.removeCallbacksAndMessages(null);
-        mHandler.removeCallbacksAndMessages(null);
+        mTotalControlHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        Log.d(TAG, "onKeyDown " + keyCode + "," + event.getAction());
-        return super.onKeyDown(keyCode, event);
-    }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        Log.d(TAG, "onKeyUp " + keyCode + "," + event.getAction());
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-                delayAutoCycle();
-                lastIndex();
-                showImage();
-                break;
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-                delayAutoCycle();
-                nextIndex();
-                showImage();
-                break;
-        }
-        return super.onKeyUp(keyCode, event);
-    }
-
-    private void delayAutoCycle() {
-        mSliderLayout.stopAutoCycle();
-        mHandler.removeMessages(MSG_RECOVERY_AUTO_PLAY);
-        mHandler.sendEmptyMessageDelayed(MSG_RECOVERY_AUTO_PLAY, DELAY_INTERVAL);
-    }
-
-    private void lastIndex() {
-        mHandler.removeMessages(MSG_CHANGE_IMAGE);
-        mIndex--;
-        if (mIndex < 0) {
-            mIndex = mSize - 1;
-        }
-    }
-
-    private int getLastIndex(int index) {
-        index--;
-        if (index < 0) {
-            index = mSize - 1;
-        }
-        return index;
-    }
-
-    private void nextIndex() {
-        mHandler.removeMessages(MSG_CHANGE_IMAGE);
-        mIndex++;
-        if (mIndex > mSize - 1) {
-            mIndex = 0;
-        }
-    }
-
-    private void showImage() {
-        String imagePath = mImageList.get(mIndex);
-        Log.d(TAG, "showImage " + mIndex + ": " + imagePath);
-        mSliderLayout.setPresetTransformer(TFS[mIndex % TFS.length]);
-        if (useOnlyOneSliderView) {
-            mSliderView.image(imagePath);
-        } else {
-//            mSliderLayout.setCurrentPosition(mIndex);// 为何会播放指定Index的下一张？
-            mSliderLayout.setCurrentPosition(getLastIndex(mIndex));
-        }
-        mHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_INTERVAL);
     }
 
 }

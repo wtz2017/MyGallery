@@ -63,7 +63,7 @@ public class SpeechManager {
 
     /**
      * @param context
-     * @param handler 用以消息回调，具体类型见 MessageListener
+     * @param handler 用以消息回调，具体类型见 SpeechMessageListener
      */
     public void init(Context context, Handler handler) {
         if (isInitSuccess || isIniting) {
@@ -87,7 +87,11 @@ public class SpeechManager {
                 super.handleMessage(msg);
                 switch (msg.what) {
                     case INIT:
-                        InitConfig config = (InitConfig) msg.obj;
+                        Handler handler = (Handler) msg.obj;
+                        SpeechSynthesizerListener listener = new SpeechMessageListener(handler);
+                        Map<String, String> params = getParams();
+                        // appId appKey secretKey 网站上您申请的应用获取。注意使用离线合成功能的话，需要应用中填写您app的包名。包名在build.gradle中获取。
+                        InitConfig config = new InitConfig(appId, appKey, secretKey, ttsMode, params, listener);
                         boolean isSuccess = mSynthesizer.init(config);
                         Log.d(TAG, "init isSuccess: " + isSuccess);
                         isIniting = false;
@@ -113,14 +117,7 @@ public class SpeechManager {
     }
 
     private void initTTs(Handler handler) {
-        // 设置初始化参数
-        // 此处可以改为 含有您业务逻辑的SpeechSynthesizerListener的实现类
-        SpeechSynthesizerListener listener = new MessageListener(handler);
-        Map<String, String> params = getParams();
-        // appId appKey secretKey 网站上您申请的应用获取。注意使用离线合成功能的话，需要应用中填写您app的包名。包名在build.gradle中获取。
-        InitConfig initConfig = new InitConfig(appId, appKey, secretKey, ttsMode, params, listener);
-
-        runInHandlerThread(INIT, initConfig);
+        runInHandlerThread(INIT, handler);
     }
 
     private void runInHandlerThread(int action) {

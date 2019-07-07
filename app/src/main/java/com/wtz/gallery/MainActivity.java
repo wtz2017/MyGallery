@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -17,8 +16,6 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.wtz.gallery.adapter.GridAdapter;
-import com.wtz.gallery.speech.MessageListener;
-import com.wtz.gallery.speech.SpeechManager;
 import com.wtz.gallery.utils.FileChooser;
 import com.wtz.gallery.utils.ScreenUtils;
 import com.wtz.gallery.utils.UsbHelper;

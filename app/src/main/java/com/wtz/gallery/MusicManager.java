@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.MediaPlayer;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 
 public class MusicManager {
@@ -19,6 +22,33 @@ public class MusicManager {
 
     private String mCurrentPath;
     private boolean isLooping;
+    private int mRepeatMaxCount;
+    private int mCurrentRepeatCount;
+    private long mRepeatIntervalMillis;
+
+    private static final int MSG_REPLAY = 1;
+    private Handler mHandler = new Handler(Looper.getMainLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+            Log.d(TAG, "handleMessage " + msg);
+            switch (msg.what) {
+                case MSG_REPLAY:
+//                    play();
+                    openAudio();
+                    break;
+            }
+        }
+    };
+
+    private void rePlayDelay(long delayMillis) {
+        Log.d(TAG, "rePlayDelay delayMillis=" + delayMillis);
+        stop();
+        mHandler.sendEmptyMessageDelayed(MSG_REPLAY, delayMillis);
+    }
+
+    private void stopReplay() {
+        mHandler.removeMessages(MSG_REPLAY);
+    }
 
     private volatile static MusicManager INSTANCE;
 
@@ -72,6 +102,7 @@ public class MusicManager {
 
         stop();
         mCurrentPath = path;
+        mCurrentRepeatCount = 0;
         openAudio();
     }
 
@@ -88,8 +119,20 @@ public class MusicManager {
         }
     }
 
+    public void setRepeatCount(int repeatCount) {
+        mRepeatMaxCount = repeatCount;
+        if (mRepeatMaxCount > 0) {
+            setLooping(false);
+        }
+    }
+
+    public void setRepeatInterval(long repeatIntervalMillis) {
+        mRepeatIntervalMillis = repeatIntervalMillis;
+    }
+
     public void destroy() {
         Log.d(TAG, "destroy");
+        mHandler.removeCallbacksAndMessages(null);
         stop();
         if (mBound) {
             mContext.unbindService(mConnection);
@@ -110,7 +153,12 @@ public class MusicManager {
     private MediaPlayer.OnCompletionListener mOnCompletionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            Log.d(TAG, "onCompletion");
+            Log.d(TAG, "onCompletion mRepeatMaxCount=" + mRepeatMaxCount
+                    + ", mCurrentRepeatCount=" + mCurrentRepeatCount);
+            if (mCurrentRepeatCount < mRepeatMaxCount) {
+                mCurrentRepeatCount++;
+                rePlayDelay(mRepeatIntervalMillis);
+            }
         }
     };
 
@@ -162,6 +210,7 @@ public class MusicManager {
     }
 
     public void stop() {
+        stopReplay();
         if (isServiceOK()) {
             mService.stop();
         }
