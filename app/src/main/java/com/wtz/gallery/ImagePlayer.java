@@ -11,15 +11,11 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.WindowManager;
+import android.widget.ImageView;
 
-import com.daimajia.slider.library.Indicators.PagerIndicator;
-import com.daimajia.slider.library.SliderLayout;
-import com.daimajia.slider.library.SliderTypes.BaseSliderView;
-import com.daimajia.slider.library.SliderTypes.DefaultSliderView;
-import com.daimajia.slider.library.Tricks.ViewPagerEx;
-import com.wtz.gallery.speech.SpeechMessageListener;
+import com.squareup.picasso.Picasso;
 import com.wtz.gallery.speech.SpeechManager;
-import com.wtz.gallery.utils.ScreenUtils;
+import com.wtz.gallery.speech.SpeechMessageListener;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,21 +44,10 @@ public class ImagePlayer extends Activity {
     private int mCurrentSpeakCount;
     private static final int MAX_SPEAK_COUNT = 2;
 
-    private SliderLayout mSliderLayout;
-    private DefaultSliderView mSliderView;
-    private static SliderLayout.Transformer[] TFS = new SliderLayout.Transformer[]{
-            SliderLayout.Transformer.Accordion,
-            SliderLayout.Transformer.Fade,
-            SliderLayout.Transformer.Stack,
-            SliderLayout.Transformer.ZoomIn,
-            SliderLayout.Transformer.Tablet
-    };
-    private static final boolean useOnlyOneSliderView = false;
+    private ImageView mImageView;
 
     private static final int DELAY_CHANGE_IMAGE_INTERVAL = 12000;
-    private static final int RECOVERY_AUTO_PLAY_INTERVAL = 15000;
     private static final int MSG_CHANGE_IMAGE = 100;
-    private static final int MSG_RECOVERY_AUTO_CHANGE_IMAGE = 101;
     private static final int MSG_SPEECH = 102;
     private static final int MSG_PLAY_AUDIO = 103;
     private Handler mTotalControlHandler = new Handler(Looper.getMainLooper()) {
@@ -72,10 +57,6 @@ public class ImagePlayer extends Activity {
                 case MSG_CHANGE_IMAGE:
                     nextIndex();
                     showImage();
-                    break;
-                case MSG_RECOVERY_AUTO_CHANGE_IMAGE:
-                    mSliderLayout.startAutoCycle();
-                    mTotalControlHandler.removeMessages(MSG_RECOVERY_AUTO_CHANGE_IMAGE);
                     break;
                 case MSG_SPEECH:
                     SpeechManager.getInstance().speak(mCurrentName, mCurrentName);
@@ -128,26 +109,6 @@ public class ImagePlayer extends Activity {
         }
     };
 
-    private void speechDelay(long delayMillis) {
-        stopSpeech();
-        mTotalControlHandler.sendEmptyMessageDelayed(MSG_SPEECH, delayMillis);
-    }
-
-    private void stopSpeech() {
-        mTotalControlHandler.removeMessages(MSG_SPEECH);
-        SpeechManager.getInstance().stop();
-    }
-
-    private void playAudioDelay(long delayMillis) {
-        stopAudio();
-        mTotalControlHandler.sendEmptyMessageDelayed(MSG_PLAY_AUDIO, delayMillis);
-    }
-
-    private void stopAudio() {
-        mTotalControlHandler.removeMessages(MSG_PLAY_AUDIO);
-        MusicManager.getInstance().stop();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -177,8 +138,7 @@ public class ImagePlayer extends Activity {
 
         setContentView(R.layout.activity_image_player);
 
-        mSliderLayout = (SliderLayout) findViewById(R.id.slider);
-        initSliderLayout();
+        mImageView = findViewById(R.id.iv_image_show);
 
         showImage();
     }
@@ -197,71 +157,6 @@ public class ImagePlayer extends Activity {
                         PowerManager.ON_AFTER_RELEASE,
                 this.getClass().getCanonicalName());
         mWakeLock.acquire();// 保持屏幕常亮
-    }
-
-    private void initSliderLayout() {
-        mSliderLayout.setDuration(DELAY_CHANGE_IMAGE_INTERVAL);
-        mSliderLayout.setIndicatorVisibility(PagerIndicator.IndicatorVisibility.Invisible);
-
-        if (useOnlyOneSliderView) {
-            // 正常是有多少图片，就new多少个SliderView加入到SliderLayout
-            // 由于我这里有太多图片，为了内存就只new一个SliderView，通过更改其url来切换图片
-            mSliderView = new DefaultSliderView(this);
-            mSliderView.setScaleType(BaseSliderView.ScaleType.CenterInside);
-            mSliderLayout.addSlider(mSliderView);
-        } else {
-            int[] wh = ScreenUtils.getScreenPixels(this);
-            for (String url : mImageList) {
-                BaseSliderView sliderView = new DefaultSliderView(this);
-                sliderView.setScaleType(BaseSliderView.ScaleType.CenterInside);
-                sliderView.image(url);
-                mSliderLayout.addSlider(sliderView);
-            }
-        }
-
-        // 放在mSliderLayout.addSlider之后，避免回调多次onPageSelected
-        mSliderLayout.addOnPageChangeListener(new ViewPagerEx.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-//                Log.d(TAG, "onPageScrolled " + position + ":" + positionOffset);
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                Log.d(TAG, "onPageSelected " + position);
-                if (position != mCurrentPage) {
-                    stopSpeech();
-                    stopAudio();
-
-                    mCurrentPage = position;
-                    mCurrentName = getImageName(position);
-                    mCurrentSpeakCount = 0;
-
-                    boolean canSpeech = !mImageList.get(mCurrentPage).contains(PATH_KEY_NO_VOICE);
-                    if (canSpeech) {
-                        speechDelay(1000);
-                    } else {
-                        playAudioDelay(1000);
-                    }
-                }
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-//                Log.d(TAG, "onPageScrollStateChanged " + state);
-            }
-        });
-    }
-
-    private String getImageName(int position) {
-        String path = mImageList.get(position);
-        int slashIndex = path.lastIndexOf(File.separator);
-        int suffixIndex = path.lastIndexOf(".");
-        String name = path.substring(slashIndex + 1, suffixIndex);
-        if ("知更鸟".equals(name)) {
-            name = "知更(geng1)鸟";
-        }
-        return name;
     }
 
     @Override
@@ -292,9 +187,8 @@ public class ImagePlayer extends Activity {
     }
 
     private void delayAutoCycle() {
-        mSliderLayout.stopAutoCycle();
-        mTotalControlHandler.removeMessages(MSG_RECOVERY_AUTO_CHANGE_IMAGE);
-        mTotalControlHandler.sendEmptyMessageDelayed(MSG_RECOVERY_AUTO_CHANGE_IMAGE, RECOVERY_AUTO_PLAY_INTERVAL);
+        mTotalControlHandler.removeMessages(MSG_CHANGE_IMAGE);
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_CHANGE_IMAGE_INTERVAL);
     }
 
     private void lastIndex() {
@@ -303,14 +197,6 @@ public class ImagePlayer extends Activity {
         if (mIndex < 0) {
             mIndex = mSize - 1;
         }
-    }
-
-    private int getLastIndex(int index) {
-        index--;
-        if (index < 0) {
-            index = mSize - 1;
-        }
-        return index;
     }
 
     private void nextIndex() {
@@ -324,20 +210,70 @@ public class ImagePlayer extends Activity {
     private void showImage() {
         String imagePath = mImageList.get(mIndex);
         Log.d(TAG, "showImage " + mIndex + ": " + imagePath);
-        mSliderLayout.setPresetTransformer(TFS[mIndex % TFS.length]);
-        if (useOnlyOneSliderView) {
-            mSliderView.image(imagePath);
-        } else {
-//            mSliderLayout.setCurrentPosition(mIndex);// 为何会播放指定Index的下一张？
-            mSliderLayout.setCurrentPosition(getLastIndex(mIndex));
+
+        Picasso.get().load(imagePath)
+                .fit()
+                .centerInside()// 需要先调用fit或resize设置目标大小，否则直接调用会报错：Center inside requires calling resize with positive width and height.
+                .placeholder(mImageView.getDrawable())
+//                .noFade()
+                .into(mImageView);
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_CHANGE_IMAGE_INTERVAL);
+
+        selectImage(mIndex);
+    }
+
+    private void selectImage(int position) {
+        if (position != mCurrentPage) {
+            stopSpeech();
+            stopAudio();
+
+            mCurrentPage = position;
+            mCurrentName = getImageName(position);
+            mCurrentSpeakCount = 0;
+
+            boolean canSpeech = !mImageList.get(mCurrentPage).contains(PATH_KEY_NO_VOICE);
+            if (canSpeech) {
+                speechDelay(1000);
+            } else {
+                playAudioDelay(1000);
+            }
         }
-//        mTotalControlHandler.sendEmptyMessageDelayed(MSG_CHANGE_IMAGE, DELAY_CHANGE_IMAGE_INTERVAL);
+    }
+
+    private String getImageName(int position) {
+        String path = mImageList.get(position);
+        int slashIndex = path.lastIndexOf(File.separator);
+        int suffixIndex = path.lastIndexOf(".");
+        String name = path.substring(slashIndex + 1, suffixIndex);
+        if ("知更鸟".equals(name)) {
+            name = "知更(geng1)鸟";
+        }
+        return name;
+    }
+
+    private void speechDelay(long delayMillis) {
+        stopSpeech();
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_SPEECH, delayMillis);
+    }
+
+    private void stopSpeech() {
+        mTotalControlHandler.removeMessages(MSG_SPEECH);
+        SpeechManager.getInstance().stop();
+    }
+
+    private void playAudioDelay(long delayMillis) {
+        stopAudio();
+        mTotalControlHandler.sendEmptyMessageDelayed(MSG_PLAY_AUDIO, delayMillis);
+    }
+
+    private void stopAudio() {
+        mTotalControlHandler.removeMessages(MSG_PLAY_AUDIO);
+        MusicManager.getInstance().stop();
     }
 
     @Override
     protected void onStart() {
         Log.d(TAG, "onStart");
-        mSliderLayout.startAutoCycle();
         super.onStart();
     }
 
@@ -356,7 +292,6 @@ public class ImagePlayer extends Activity {
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop");
-        mSliderLayout.stopAutoCycle();
         super.onStop();
     }
 

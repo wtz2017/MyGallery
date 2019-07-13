@@ -5,17 +5,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!--<ImageView
+    <ImageView
         android:id="@+id/iv_image_show"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:src="@drawable/screen_saver"
-        android:scaleType="fitCenter"/>-->
+        android:scaleType="fitCenter"/>
 
-    <com.daimajia.slider.library.SliderLayout
+   <!-- <com.daimajia.slider.library.SliderLayout
         android:id="@+id/slider"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        />
+        />-->
 
 </LinearLayout>

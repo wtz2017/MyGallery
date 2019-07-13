@@ -72,12 +72,14 @@ public class GridAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        Picasso.with(mContext)
+        Picasso.get()
                 .load((String) getItem(position))
                 // 解决 OOM 问题
                 .resize(mItemLayoutParams.width, mItemLayoutParams.height)
+                .centerCrop()// 需要先调用fit或resize设置目标大小，否则会报错：Center crop requires calling resize with positive width and height
 //                .placeholder(R.drawable.image_default)
 //                .error(R.drawable.image_default)
+                .noFade()
                 .into(holder.imageView);
 
         return convertView;
