@@ -16,7 +16,7 @@
         <Button
             android:id="@+id/btn_start_play"
             style="@style/ButtonStyle"
-            android:text="开始播放"/>
+            android:text="开始播放" />
 
         <Button
             android:id="@+id/btn_select_file"
@@ -37,6 +37,7 @@
         android:layout_height="match_parent"
         android:layout_marginTop="10dp"
         android:clipChildren="false"
+        android:focusable="true"
         android:gravity="center"
         android:listSelector="@android:color/transparent"
         android:stretchMode="columnWidth" />

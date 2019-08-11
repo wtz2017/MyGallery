@@ -121,6 +121,9 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
 
     private void initGridView(View root) {
         mGridView = root.findViewById(R.id.gridView_video);
+        mGridView.setFocusable(false);
+        mGridView.setFocusableInTouchMode(false);
+
         mGridView.setNumColumns(GRIDVIEW_COLUMNS);
 
         int[] wh = ScreenUtils.getScreenPixels(getActivity());
@@ -234,6 +237,15 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
     }
 
     @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            mGridView.setFocusable(true);
+            mGridView.setFocusableInTouchMode(true);
+        }
+    }
+
+    @Override
     public void onPause() {
         Log.d(TAG, "onPause");
         super.onPause();
@@ -286,6 +298,16 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                             mStartPlayButton.requestFocus();
                             return true;
                         }
+                    }
+                }
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
+                            v.getId() == R.id.btn_usb_default_video) {
+                        mGridView.setSelection(0);
+                        mGridView.requestFocus();
+                        return true;
                     }
                 }
                 break;
