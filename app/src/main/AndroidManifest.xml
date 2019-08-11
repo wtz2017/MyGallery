@@ -31,6 +31,9 @@
         <activity
             android:name="com.wtz.gallery.ImagePlayer"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+        <activity
+            android:name="com.wtz.gallery.VideoPlayer"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
         <activity android:name="com.wtz.gallery.utils.FileChooser" android:theme="@style/FileChooserTheme"/>
         <service android:name=".MusicService" android:exported="true" android:enabled="true" />
     </application>

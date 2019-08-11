@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="common_margin_top">10dp</dimen>
     <dimen name="grid_vertical_spacing">4dp</dimen>
+    <dimen name="tab_item_spacing">30dp</dimen>
+    <dimen name="tab_item_unfocused_text_size">20sp</dimen>
+    <dimen name="tab_item_unfocused_highlight_text_size">22sp</dimen>
+    <dimen name="tab_item_focused_text_size">22sp</dimen>
+    <dimen name="button_spacing">30dp</dimen>
+    <dimen name="button_padding">20dp</dimen>
+    <dimen name="button_height">28dp</dimen>
+    <dimen name="button_textsize">18sp</dimen>
+
+    <dimen name="dp_5">5dp</dimen>
+    <dimen name="dp_6">6dp</dimen>
+    <dimen name="dp_9">9dp</dimen>
+    <dimen name="dp_26">26dp</dimen>
+    <dimen name="dp_45">45dp</dimen>
+    <dimen name="dp_150">150dp</dimen>
+    <dimen name="dp_200">200dp</dimen>
+    <dimen name="dp_260">260dp</dimen>
+
+    <dimen name="sp_21">21sp</dimen>
 </resources>

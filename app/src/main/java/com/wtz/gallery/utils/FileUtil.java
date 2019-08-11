@@ -2,16 +2,17 @@ package com.wtz.gallery.utils;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Environment;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-/**
- * Created by fujiayi on 2017/5/19.
- */
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class FileUtil {
 
@@ -70,4 +71,71 @@ public class FileUtil {
             }
         }
     }
+
+    public static Bitmap getVideoThumbnail(String filePath) {
+        // MediaMetadataRetriever is available on API Level 8
+        // but is hidden until API Level 10
+        Class<?> clazz = null;
+        Object instance = null;
+        try {
+            clazz = Class.forName("android.media.MediaMetadataRetriever");
+            instance = clazz.newInstance();
+
+            Method method = clazz.getMethod("setDataSource", String.class);
+            method.invoke(instance, filePath);
+
+            // The method name changes between API Level 9 and 10.
+            if (Build.VERSION.SDK_INT <= 9) {
+                return (Bitmap) clazz.getMethod("captureFrame").invoke(instance);
+            } else {
+                byte[] data = (byte[]) clazz.getMethod("getEmbeddedPicture").invoke(instance);
+                if (data != null) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                    if (bitmap != null) return bitmap;
+                }
+                return (Bitmap) clazz.getMethod("getFrameAtTime").invoke(instance);
+            }
+        } catch (IllegalArgumentException ex) {
+            // Assume this is a corrupt video file
+        } catch (RuntimeException ex) {
+            // Assume this is a corrupt video file.
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (instance != null) {
+                    clazz.getMethod("release").invoke(instance);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    public static Bitmap scaleIntoSizeRange(Bitmap srcBitmap, int maxWidth, int maxHeight) {
+        Bitmap bitmap = null;
+        int w = srcBitmap.getWidth();
+        int h = srcBitmap.getHeight();
+        if (w > maxWidth || h > maxHeight) {
+            float sw = w / (float) maxWidth;
+            float sh = h / (float) maxHeight;
+            float scale = sw > sh ? sw : sh;
+            int destW = (int) (w / scale);
+            int destH = (int) (h / scale);
+            bitmap = Bitmap.createScaledBitmap(srcBitmap, destW, destH, true);
+            if (bitmap != srcBitmap && !srcBitmap.isRecycled()) {
+                srcBitmap.recycle();
+            }
+        }
+        return bitmap;
+    }
+
 }

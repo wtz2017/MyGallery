@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.wtz.gallery.view.SurfaceVideoView
+        android:id="@+id/video_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/ib_play_pause"
+            android:layout_width="@dimen/dp_45"
+            android:layout_height="@dimen/dp_45"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusLeft="@+id/ib_play_pause"
+            android:nextFocusRight="@+id/ib_play_pause"
+            android:nextFocusUp="@+id/ib_play_pause"
+            android:nextFocusDown="@+id/ib_play_pause"
+            android:scaleType="fitXY"
+            android:src="@drawable/play" />
+
+        <TextView
+            android:id="@+id/tv_current_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/dp_9"
+            android:text="00:00"
+            android:textColor="#0000ff"
+            android:textSize="@dimen/sp_21" />
+
+        <SeekBar
+            android:id="@+id/seek_bar"
+            android:layout_width="@dimen/dp_260"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:maxWidth="@dimen/dp_260"
+            android:minWidth="@dimen/dp_260"
+            android:layout_marginLeft="@dimen/dp_6"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:progress="0"
+            android:progressDrawable="@drawable/seekbar_style"
+            android:secondaryProgress="0"
+            android:thumb="@drawable/seekbar_thumb_video"
+            android:thumbOffset="0dp"/>
+
+        <TextView
+            android:id="@+id/tv_total_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/dp_6"
+            android:text="00:00"
+            android:textColor="#0000ff"
+            android:textSize="@dimen/sp_21" />
+
+    </LinearLayout>
+
+</RelativeLayout>

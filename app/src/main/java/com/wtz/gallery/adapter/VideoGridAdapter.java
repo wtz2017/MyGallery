@@ -3,6 +3,8 @@ package com.wtz.gallery.adapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,24 +15,27 @@ import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
 import com.wtz.gallery.R;
+import com.wtz.gallery.utils.FileUtil;
 
 import java.util.List;
 
 
-public class GridAdapter extends BaseAdapter {
-    private final static String TAG = GridAdapter.class.getSimpleName();
+public class VideoGridAdapter extends BaseAdapter {
+    private final static String TAG = VideoGridAdapter.class.getSimpleName();
 
     private Context mContext;
     private List<String> mDataList;
     private int mItemWidth;
     private AbsListView.LayoutParams mItemLayoutParams;
+    private Handler mHandler;
 
     private View mLastView = null;
 
-    public GridAdapter(Context context, List<String> dataList, int itemWidth) {
+    public VideoGridAdapter(Context context, List<String> dataList, int itemWidth, Handler handler) {
         mContext = context;
         mDataList = dataList;
         mItemWidth = itemWidth;
+        mHandler = handler;
     }
 
     public void updateData(List<String> dataList) {
@@ -54,7 +59,7 @@ public class GridAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         ViewHolder holder = null;
         if (convertView == null) {
             holder = new ViewHolder();
@@ -65,6 +70,7 @@ public class GridAdapter extends BaseAdapter {
                 mItemLayoutParams.height = mItemLayoutParams.width * 3 / 4;
             }
             convertView.setLayoutParams(mItemLayoutParams);
+            holder.id = (String) getItem(position);
             holder.imageView = (ImageView) convertView.findViewById(R.id.iv_img);
             holder.cover = convertView.findViewById(R.id.v_cover);
             convertView.setTag(holder);
@@ -72,15 +78,33 @@ public class GridAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        Picasso.get()
-                .load((String) getItem(position))
-                // 解决 OOM 问题
-                .resize(mItemLayoutParams.width, mItemLayoutParams.height)
-                .centerCrop()// 需要先调用fit或resize设置目标大小，否则会报错：Center crop requires calling resize with positive width and height
-//                .placeholder(R.drawable.image_default)
-//                .error(R.drawable.image_default)
-                .noFade()
-                .into(holder.imageView);
+        holder.id = (String) getItem(position);
+        final ViewHolder finalHolder = holder;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String path = (String) getItem(position);
+                Log.d(TAG, "to getVideoThumbnail path = " + path);
+                if (!path.equals(finalHolder.id)) {
+                    Log.d(TAG, "before getVideoThumbnail path != finalHolder.id");
+                    return;
+                }
+                final Bitmap bitmap = FileUtil.getVideoThumbnail((String) getItem(position));
+                Log.d(TAG, "getVideoThumbnail bitmap==null? " + (bitmap == null));
+                if (path.equals(finalHolder.id) && bitmap != null) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Bitmap scaled = FileUtil.scaleIntoSizeRange(bitmap, mItemLayoutParams.width,
+                                    mItemLayoutParams.height);
+                            finalHolder.imageView.setImageBitmap(scaled);
+                        }
+                    });
+                } else {
+                    Log.d(TAG, "after getVideoThumbnail path != finalHolder.id or bitmap is null");
+                }
+            }
+        }).start();
 
         return convertView;
     }
@@ -124,6 +148,7 @@ public class GridAdapter extends BaseAdapter {
     }
 
     class ViewHolder {
+        String id;
         ImageView imageView;
         View cover;
     }

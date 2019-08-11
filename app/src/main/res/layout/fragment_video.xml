@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimaryDark"
+    android:clipChildren="false"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/head"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/common_margin_top"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_start_play"
+            style="@style/ButtonStyle"
+            android:text="开始播放"/>
+
+        <Button
+            android:id="@+id/btn_select_file"
+            style="@style/ButtonStyle"
+            android:text="选择视频" />
+
+        <Button
+            android:id="@+id/btn_usb_default_video"
+            style="@style/ButtonStyle"
+            android:text="U盘默认视频" />
+
+    </LinearLayout>
+
+    <!-- 在上述父控件LinearLayout中设置 clipChildren = false, clipToPadding = false, 避免边缘的子View放大时被父View遮挡 -->
+    <com.wtz.gallery.view.ScaleGridView
+        android:id="@+id/gridView_video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp"
+        android:clipChildren="false"
+        android:gravity="center"
+        android:listSelector="@android:color/transparent"
+        android:stretchMode="columnWidth" />
+</LinearLayout>
