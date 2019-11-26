@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+	<dimen name="common_margin_top">12.0000dp</dimen>
+	<dimen name="grid_vertical_spacing">4.8000dp</dimen>
+	<dimen name="tab_item_spacing">36.0000dp</dimen>
+	<dimen name="tab_item_unfocused_text_size">24.0000sp</dimen>
+	<dimen name="tab_item_unfocused_highlight_text_size">26.4000sp</dimen>
+	<dimen name="tab_item_focused_text_size">26.4000sp</dimen>
+	<dimen name="button_spacing">36.0000dp</dimen>
+	<dimen name="button_padding">24.0000dp</dimen>
+	<dimen name="button_height">33.6000dp</dimen>
+	<dimen name="button_textsize">21.6000sp</dimen>
+	<dimen name="dp_5">6.0000dp</dimen>
+	<dimen name="dp_6">7.2000dp</dimen>
+	<dimen name="dp_9">10.8000dp</dimen>
+	<dimen name="dp_10">12.0000dp</dimen>
+	<dimen name="dp_12">14.4000dp</dimen>
+	<dimen name="dp_16">19.2000dp</dimen>
+	<dimen name="dp_20">24.0000dp</dimen>
+	<dimen name="dp_26">31.2000dp</dimen>
+	<dimen name="dp_30">36.0000dp</dimen>
+	<dimen name="dp_45">54.0000dp</dimen>
+	<dimen name="dp_150">180.0000dp</dimen>
+	<dimen name="dp_200">240.0000dp</dimen>
+	<dimen name="dp_260">312.0000dp</dimen>
+	<dimen name="sp_21">25.2000sp</dimen>
+</resources>

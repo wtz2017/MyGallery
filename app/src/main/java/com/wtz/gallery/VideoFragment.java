@@ -38,6 +38,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
 
     private Button mStartPlayButton;
     private Button mSelectFileButton;
+    private Button mSDCardDefaultButton;
     private Button mUsbDefaultButton;
 
     private static final int GRIDVIEW_COLUMNS = 4;
@@ -113,6 +114,10 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
         mSelectFileButton = root.findViewById(R.id.btn_select_file);
         mSelectFileButton.setOnClickListener(this);
         mSelectFileButton.setOnKeyListener(this);
+
+        mSDCardDefaultButton = root.findViewById(R.id.btn_sdcard_default_video);
+        mSDCardDefaultButton.setOnClickListener(this);
+        mSDCardDefaultButton.setOnKeyListener(this);
 
         mUsbDefaultButton = root.findViewById(R.id.btn_usb_default_video);
         mUsbDefaultButton.setOnClickListener(this);
@@ -286,7 +291,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     // 过滤ACTION_DOWN 是为了只处理从谁开始落下按键的情况
                     if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
-                            v.getId() == R.id.btn_usb_default_video) {
+                            v.getId() == R.id.btn_usb_default_video || v.getId() == R.id.btn_sdcard_default_video) {
                         selectTab();
                         mGridView.scrollTo(0, 0);
                         return true;
@@ -304,7 +309,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
-                            v.getId() == R.id.btn_usb_default_video) {
+                            v.getId() == R.id.btn_usb_default_video || v.getId() == R.id.btn_sdcard_default_video) {
                         mGridView.setSelection(0);
                         mGridView.requestFocus();
                         return true;
@@ -325,6 +330,10 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
             case R.id.btn_select_file:
                 Log.d(TAG, "onClick btn_select_file");
                 mSelectRequestCode = FileChooser.chooseVideo(getActivity());
+                break;
+            case R.id.btn_sdcard_default_video:
+                Log.d(TAG, "onClick btn_sdcard_default_video");
+                loadVideoFromDefaultSDCard();
                 break;
             case R.id.btn_usb_default_video:
                 Log.d(TAG, "onClick btn_usb_default_video");
@@ -359,6 +368,17 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                 updateGridview();
             }
         }
+    }
+
+    private void loadVideoFromDefaultSDCard() {
+        File dir = new File("/sdcard/", DEFAULT_USB_VIDEO_DIR_NAME);
+        if (!dir.exists() || !dir.isDirectory()) {
+            Toast.makeText(getActivity(), "SD卡视频目录my_videos不存在", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mVideoList.clear();
+        mLastVideoPath = dir.getAbsolutePath();
+        updateGridview();
     }
 
     private void loadVideoFromDefaultUsb() {

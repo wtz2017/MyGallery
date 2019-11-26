@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,11 +13,13 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 import com.wtz.gallery.R;
 import com.wtz.gallery.utils.FileUtil;
 
+import java.io.File;
 import java.util.List;
 
 
@@ -63,7 +66,7 @@ public class VideoGridAdapter extends BaseAdapter {
         ViewHolder holder = null;
         if (convertView == null) {
             holder = new ViewHolder();
-            convertView = LayoutInflater.from(mContext).inflate(R.layout.item_gridview, parent, false);
+            convertView = LayoutInflater.from(mContext).inflate(R.layout.video_item_gridview, parent, false);
             if (mItemLayoutParams == null) {
                 mItemLayoutParams = (AbsListView.LayoutParams) convertView.getLayoutParams();
                 mItemLayoutParams.width = mItemWidth;
@@ -72,13 +75,17 @@ public class VideoGridAdapter extends BaseAdapter {
             convertView.setLayoutParams(mItemLayoutParams);
             holder.id = (String) getItem(position);
             holder.imageView = (ImageView) convertView.findViewById(R.id.iv_img);
+            holder.name = convertView.findViewById(R.id.tv_name);
             holder.cover = convertView.findViewById(R.id.v_cover);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        holder.id = (String) getItem(position);
+        String fullPath = (String) getItem(position);
+        holder.id = fullPath;
+        holder.name.setText(stripFileName(fullPath));
+        holder.imageView.setImageResource(R.drawable.icon_video);
         final ViewHolder finalHolder = holder;
         new Thread(new Runnable() {
             @Override
@@ -107,6 +114,21 @@ public class VideoGridAdapter extends BaseAdapter {
         }).start();
 
         return convertView;
+    }
+
+    private String stripFileName(String absolutePath) {
+//        File.separator
+        if (TextUtils.isEmpty(absolutePath) || !absolutePath.contains(File.separator)) {
+            return "Unknown";
+        }
+
+        int start = absolutePath.lastIndexOf(File.separator);
+        int end = absolutePath.lastIndexOf(".");
+        if (start >= end) {
+            return "Unknown";
+        }
+
+        return absolutePath.substring(start + 1, end);
     }
 
     public void selectView(View view) {
@@ -150,6 +172,7 @@ public class VideoGridAdapter extends BaseAdapter {
     class ViewHolder {
         String id;
         ImageView imageView;
+        TextView name;
         View cover;
     }
 

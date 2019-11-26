@@ -39,6 +39,7 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
 
     private Button mStartPlayButton;
     private Button mSelectFileButton;
+    private Button mSDCardDefaultButton;
     private Button mUsbDefaultButton;
 
     private static final int GRIDVIEW_COLUMNS = 4;
@@ -118,6 +119,10 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
         mSelectFileButton = root.findViewById(R.id.btn_select_file);
         mSelectFileButton.setOnClickListener(this);
         mSelectFileButton.setOnKeyListener(this);
+
+        mSDCardDefaultButton = root.findViewById(R.id.btn_sdcard_default_img);
+        mSDCardDefaultButton.setOnClickListener(this);
+        mSDCardDefaultButton.setOnKeyListener(this);
 
         mUsbDefaultButton = root.findViewById(R.id.btn_usb_default_img);
         mUsbDefaultButton.setOnClickListener(this);
@@ -286,7 +291,7 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     // 过滤ACTION_DOWN 是为了只处理从谁开始落下按键的情况
                     if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
-                            v.getId() == R.id.btn_usb_default_img) {
+                            v.getId() == R.id.btn_usb_default_img || v.getId() == R.id.btn_sdcard_default_img) {
                         selectTab();
                         mGridView.scrollTo(0, 0);
                         return true;
@@ -315,6 +320,10 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
             case R.id.btn_select_file:
                 Log.d(TAG, "onClick btn_select_file");
                 mSelectRequestCode = FileChooser.chooseImage(getActivity());
+                break;
+            case R.id.btn_sdcard_default_img:
+                Log.d(TAG, "onClick btn_sdcard_default_img");
+                loadImageFromDefaultSDCard();
                 break;
             case R.id.btn_usb_default_img:
                 Log.d(TAG, "onClick btn_usb_default_img");
@@ -350,6 +359,17 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
                 updateImage();
             }
         }
+    }
+
+    private void loadImageFromDefaultSDCard() {
+        File dir = new File("/sdcard/", DEFAULT_USB_IMG_DIR_NAME);
+        if (!dir.exists() || !dir.isDirectory()) {
+            Toast.makeText(getActivity(), "SD卡图片目录my_images不存在", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mImageList.clear();
+        mLastImagePath = dir.getAbsolutePath();
+        updateImage();
     }
 
     private void loadImageFromDefaultUsb() {

@@ -58,7 +58,7 @@ public class ImageGridAdapter extends BaseAdapter {
         ViewHolder holder = null;
         if (convertView == null) {
             holder = new ViewHolder();
-            convertView = LayoutInflater.from(mContext).inflate(R.layout.item_gridview, parent, false);
+            convertView = LayoutInflater.from(mContext).inflate(R.layout.image_item_gridview, parent, false);
             if (mItemLayoutParams == null) {
                 mItemLayoutParams = (AbsListView.LayoutParams) convertView.getLayoutParams();
                 mItemLayoutParams.width = mItemWidth;
@@ -77,7 +77,7 @@ public class ImageGridAdapter extends BaseAdapter {
                 // 解决 OOM 问题
                 .resize(mItemLayoutParams.width, mItemLayoutParams.height)
                 .centerCrop()// 需要先调用fit或resize设置目标大小，否则会报错：Center crop requires calling resize with positive width and height
-//                .placeholder(R.drawable.image_default)
+                .placeholder(R.drawable.icon_image)
 //                .error(R.drawable.image_default)
                 .noFade()
                 .into(holder.imageView);

@@ -24,6 +24,11 @@
             android:text="选择视频" />
 
         <Button
+            android:id="@+id/btn_sdcard_default_video"
+            style="@style/ButtonStyle"
+            android:text="SD卡默认视频" />
+
+        <Button
             android:id="@+id/btn_usb_default_video"
             style="@style/ButtonStyle"
             android:text="U盘默认视频" />

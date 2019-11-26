@@ -24,6 +24,11 @@
             android:text="选择图片" />
 
         <Button
+            android:id="@+id/btn_sdcard_default_img"
+            style="@style/ButtonStyle"
+            android:text="SD卡默认图片" />
+
+        <Button
             android:id="@+id/btn_usb_default_img"
             style="@style/ButtonStyle"
             android:text="U盘默认图片" />
