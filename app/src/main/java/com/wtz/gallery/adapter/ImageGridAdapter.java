@@ -103,7 +103,7 @@ public class ImageGridAdapter extends BaseAdapter {
         holder.cover.setVisibility(View.VISIBLE);
 
         AnimatorSet animSet = new AnimatorSet();
-        float[] values = new float[]{1.0f, 1.1f};
+        float[] values = new float[]{1.0f, 1.08f};
         animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
                 ObjectAnimator.ofFloat(view, "scaleY", values));
         animSet.setDuration(10).start();
@@ -117,7 +117,7 @@ public class ImageGridAdapter extends BaseAdapter {
         holder.cover.setVisibility(View.GONE);
 
         AnimatorSet animSet = new AnimatorSet();
-        float[] values = new float[]{1.1f, 1.0f};
+        float[] values = new float[]{1.08f, 1.0f};
         animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
                 ObjectAnimator.ofFloat(view, "scaleY", values));
         animSet.setDuration(10).start();

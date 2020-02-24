@@ -147,6 +147,7 @@ public class TabItem extends RelativeLayout {
 
     public TabItem create() {
         setFocusable(true);
+        setFocusableInTouchMode(true);
 
         if (backgroundId != INVALID_RES_ID) {
             setBackgroundResource(backgroundId);
@@ -205,7 +206,7 @@ public class TabItem extends RelativeLayout {
     @Override
     protected void onFocusChanged(boolean gainFocus, int direction, @Nullable Rect previouslyFocusedRect) {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
-        Log.d(TAG, "onFocusChange index=" + index + ",gainFocus=" + gainFocus);
+        Log.w(TAG, "onFocusChange index=" + index + ",gainFocus=" + gainFocus);
         if (gainFocus) {
             performFocused();
         } else {
@@ -221,6 +222,7 @@ public class TabItem extends RelativeLayout {
         if (status == STATUS.FOCUSED) {
             return;
         }
+        Log.w(TAG, "TabItem performFocused index= " + index);
         status = STATUS.FOCUSED;
         titleView.setTextSize(textSizeUnit, focusedTextSize);
         titleView.setTextColor(focusedTextColor);
@@ -231,6 +233,7 @@ public class TabItem extends RelativeLayout {
         if (status == STATUS.UNFOCUSED_HIGHLIGHT) {
             return;
         }
+        Log.w(TAG, "TabItem performUnfocusedHighlight index= " + index);
         status = STATUS.UNFOCUSED_HIGHLIGHT;
         titleView.setTextSize(textSizeUnit, unfocusedHighlightTextSize);
         titleView.setTextColor(unfocusedHighlightTextColor);
@@ -241,6 +244,7 @@ public class TabItem extends RelativeLayout {
         if (status == STATUS.UNFOCUSED) {
             return;
         }
+        Log.w(TAG, "TabItem performUnfocused index= " + index);
         status = STATUS.UNFOCUSED;
         titleView.setTextSize(textSizeUnit, unfocusedTextSize);
         titleView.setTextColor(unfocusedTextColor);

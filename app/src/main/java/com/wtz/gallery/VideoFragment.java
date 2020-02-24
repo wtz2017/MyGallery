@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -15,9 +16,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.wtz.gallery.adapter.VideoGridAdapter;
+import com.wtz.gallery.data.Item;
 import com.wtz.gallery.utils.FileChooser;
 import com.wtz.gallery.utils.ScreenUtils;
 import com.wtz.gallery.utils.UsbHelper;
@@ -29,6 +33,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,17 +41,23 @@ import java.util.Map;
 public class VideoFragment extends BaseFragment implements View.OnClickListener, View.OnKeyListener {
     private static final String TAG = "VideoFragment";
 
-    private Button mStartPlayButton;
+    private TextView mCurrentPathView;
     private Button mSelectFileButton;
     private Button mSDCardDefaultButton;
     private Button mUsbDefaultButton;
+    private LinearLayout mNoContentLayout;
+    private Button mNoContentBackButton;
 
     private static final int GRIDVIEW_COLUMNS = 4;
     private static final int GRIDVIEW_VERTICAL_SPACE_DIP = 12;
     private static final int GRIDVIEW_HORIZONTAL_SPACE_DIP = 12;
     private ScaleGridView mGridView;
     private VideoGridAdapter mGridAdapter;
-    private ArrayList<String> mVideoList = new ArrayList<>();
+    private ArrayList<Item> mTotalList = new ArrayList<>();
+    private ArrayList<Item> mVideoList = new ArrayList<>();
+
+    // 进入过的每层文件夹中的位置，供返回时使用
+    private ArrayList<Integer> mEnterDirIndexList = new ArrayList<>();
 
     private UsbHelper mUsbHelper;
     private static final String DEFAULT_USB_VIDEO_DIR_NAME = "my_videos";
@@ -55,6 +66,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
     private static final String SP_NAME = "config";
     private static final String SP_KEY_LAST_VIDEO_PATH = "sp_key_last_video_path";
     private String mLastVideoPath;
+    private String mRootPath;
 
     private static final Map<String, String> VIDEO_SUFFIX = new HashMap<>();
 
@@ -94,23 +106,19 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
 
         mSp = getActivity().getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
         mLastVideoPath = mSp.getString(SP_KEY_LAST_VIDEO_PATH, "");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                parseVideoDir(mLastVideoPath);
-            }
-        }).start();
+        mRootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
 
+        mCurrentPathView = view.findViewById(R.id.tv_path);
+        mCurrentPathView.setText(mLastVideoPath);
+        mNoContentLayout = view.findViewById(R.id.ll_no_content);
+        mNoContentLayout.setVisibility(View.GONE);
+        mNoContentLayout.setOnKeyListener(this);
         initButtons(view);
         initGridView(view);
         return view;
     }
 
     private void initButtons(View root) {
-        mStartPlayButton = root.findViewById(R.id.btn_start_play);
-        mStartPlayButton.setOnClickListener(this);
-        mStartPlayButton.setOnKeyListener(this);
-
         mSelectFileButton = root.findViewById(R.id.btn_select_file);
         mSelectFileButton.setOnClickListener(this);
         mSelectFileButton.setOnKeyListener(this);
@@ -122,6 +130,10 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
         mUsbDefaultButton = root.findViewById(R.id.btn_usb_default_video);
         mUsbDefaultButton.setOnClickListener(this);
         mUsbDefaultButton.setOnKeyListener(this);
+
+        mNoContentBackButton = root.findViewById(R.id.btn_no_content_back);
+        mNoContentBackButton.setOnClickListener(this);
+        mNoContentBackButton.setOnKeyListener(this);
     }
 
     private void initGridView(View root) {
@@ -139,14 +151,22 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
         mGridView.setVerticalSpacing(verticalSapce);
 
         int horizontalSapce = ScreenUtils.dip2px(getActivity(), GRIDVIEW_HORIZONTAL_SPACE_DIP);
-        mGridAdapter = new VideoGridAdapter(getActivity(), mVideoList,
+        mGridAdapter = new VideoGridAdapter(getActivity(), mTotalList,
                 columnWidth - horizontalSapce * 2, mHandler);
         mGridView.setAdapter(mGridAdapter);
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Log.d(TAG, "mGridView onItemClick position=" + position);
-                playVideo(position);
+                Item item = (Item) mGridAdapter.getItem(position);
+                Log.d(TAG, "mGridView onItemClick position=" + position + ", path=" + item.path);
+                if (item.type == Item.TYPE_VIDEO) {
+                    play(item);
+                } else if (item.type == Item.TYPE_DIR) {
+                    mEnterDirIndexList.add(position);
+                    mLastVideoPath = item.path;
+                    mCurrentPathView.setText(mLastVideoPath);
+                    parseAndUpdateGridview(false);
+                }
             }
         });
         mGridView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -172,61 +192,78 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
             public void onFocusChange(View v, boolean hasFocus) {
                 Log.d(TAG, "mGridView onFocusChange hasFocus=" + hasFocus);
                 if (hasFocus) {
-//                    mGridView.setSelection(0);
-//                    mGridView.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
-                    mGridView.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (mGridView.hasFocus()) {
-                                mGridAdapter.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
-//                                mGridView.selectView(mGridView.getSelectedView());
-                            }
-                        }
-                    }, 200);
+                    delayShowSelectEffect();
                 } else {
                     mGridAdapter.selectView(null);
                 }
             }
         });
         mGridView.setOnKeyListener(this);
+        parseAndUpdateGridview(false);
     }
 
     private void parseVideoDir(String videoPath) {
         if (TextUtils.isEmpty(videoPath)) {
-            Log.d(TAG, "Video path is null");
+            Log.e(TAG, "Video path is null");
             return;
         }
+
         File dir = new File(videoPath);
         if (!dir.exists() || !dir.isDirectory()) {
-            Log.d(TAG, "Video dir not exist");
+            Log.e(TAG, "Video dir not exist");
             return;
         }
 
         File[] files = dir.listFiles();
+        if (files == null) {
+            Log.e(TAG, "target File[] files is null");
+            return;
+        }
+
         int index;
         String suffix;
         String path;
+        mTotalList.clear();
+        mVideoList.clear();
         for (File file : files) {
+            path = file.getAbsolutePath();
             if (file.isDirectory()) {
-                parseVideoDir(file.getAbsolutePath());
+                mTotalList.add(new Item(Item.TYPE_DIR, file.getName(), path));
             } else {
-                path = file.getAbsolutePath();
                 index = path.lastIndexOf(".");
                 if (index > 0 && index < path.length() - 1) {
                     suffix = path.substring(index);
                     if (VIDEO_SUFFIX.containsKey(suffix.toLowerCase())) {
-//                        String fileUri = fileUri(path);
-//                        mVideoList.add(fileUri);
-                        // video 加载不可以添加 "file://"
-                        mVideoList.add(path);
+                        Item audio = new Item(Item.TYPE_VIDEO, stripFileName(file), path);
+                        mTotalList.add(audio);
+                        mVideoList.add(audio);
                     }
                 }
             }
+        }
+        if (mTotalList.size() == 0) {
+            return;
+        }
+        if (mTotalList.size() > 0) {
+            Collections.sort(mTotalList);
+        }
+        if (mVideoList.size() > 0) {
+            Collections.sort(mVideoList);
         }
     }
 
     private String fileUri(String filePath) {
         return "file://" + filePath;
+    }
+
+    private String stripFileName(File file) {
+        String orign = file.getName();
+        int end = orign.lastIndexOf(".");
+        if (end == -1 || end == 0) {
+            end = orign.length();
+        }
+
+        return orign.substring(0, end);
     }
 
     @Override
@@ -287,10 +324,19 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         Log.d(TAG, "onKey " + keyCode + "," + event.getAction() + ",v.getId=" + v.getId());
         switch (keyCode) {
+            case KeyEvent.KEYCODE_BACK:
+                if (mRootPath == null || mRootPath.equals(mLastVideoPath)) {
+                    return false;
+                }
+                if (event.getAction() == KeyEvent.ACTION_UP) {
+                    back();
+                }
+                return true;
+
             case KeyEvent.KEYCODE_DPAD_UP:
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     // 过滤ACTION_DOWN 是为了只处理从谁开始落下按键的情况
-                    if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
+                    if (v.getId() == R.id.btn_select_file ||
                             v.getId() == R.id.btn_usb_default_video || v.getId() == R.id.btn_sdcard_default_video) {
                         selectTab();
                         mGridView.scrollTo(0, 0);
@@ -300,7 +346,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                         int gridIndex = mGridView.getSelectedItemPosition();
                         Log.d(TAG, "onKey gridIndex=" + gridIndex);
                         if (gridIndex >= 0 && gridIndex <= 3) {
-                            mStartPlayButton.requestFocus();
+                            mSelectFileButton.requestFocus();
                             return true;
                         }
                     }
@@ -308,7 +354,7 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
+                    if (v.getId() == R.id.btn_select_file ||
                             v.getId() == R.id.btn_usb_default_video || v.getId() == R.id.btn_sdcard_default_video) {
                         mGridView.setSelection(0);
                         mGridView.requestFocus();
@@ -323,10 +369,6 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.btn_start_play:
-                Log.d(TAG, "onClick btn_start_play");
-                playVideo(0);
-                break;
             case R.id.btn_select_file:
                 Log.d(TAG, "onClick btn_select_file");
                 mSelectRequestCode = FileChooser.chooseVideo(getActivity());
@@ -339,16 +381,35 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
                 Log.d(TAG, "onClick btn_usb_default_video");
                 loadVideoFromDefaultUsb();
                 break;
+            case R.id.btn_no_content_back:
+                Log.d(TAG, "onClick btn_no_content_back");
+                back();
+                break;
         }
     }
 
-    private void playVideo(int index) {
+    private void back() {
+        if (mRootPath == null || mRootPath.equals(mLastVideoPath)) {
+            return;
+        }
+        int end = mLastVideoPath.lastIndexOf(File.separator);
+        if (end == -1 || end == 0) {
+            mLastVideoPath = mRootPath;
+        } else {
+            mLastVideoPath = mLastVideoPath.substring(0, end);
+        }
+        mCurrentPathView.setText(mLastVideoPath);
+        parseAndUpdateGridview(true);
+    }
+
+    private void play(Item item) {
         if (mVideoList.isEmpty()) {
             Toast.makeText(getActivity(), "请选择视频", Toast.LENGTH_SHORT).show();
             return;
         }
+        int index = mVideoList.indexOf(item);
         Intent i = new Intent(getActivity(), VideoPlayer.class);
-        i.putStringArrayListExtra(VideoPlayer.KEY_VIDEO_LIST, mVideoList);
+        i.putExtra(VideoPlayer.KEY_VIDEO_LIST, mVideoList);
         i.putExtra(VideoPlayer.KEY_VIDEO_INDEX, index);
         startActivity(i);
     }
@@ -365,7 +426,8 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
             if (!TextUtils.isEmpty(filePath) && (file = new File(filePath)).isFile()) {
                 mVideoList.clear();
                 mLastVideoPath = file.getParent();
-                updateGridview();
+                mCurrentPathView.setText(mLastVideoPath);
+                parseAndUpdateGridview(false);
             }
         }
     }
@@ -378,7 +440,8 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
         }
         mVideoList.clear();
         mLastVideoPath = dir.getAbsolutePath();
-        updateGridview();
+        mCurrentPathView.setText(mLastVideoPath);
+        parseAndUpdateGridview(false);
     }
 
     private void loadVideoFromDefaultUsb() {
@@ -394,15 +457,79 @@ public class VideoFragment extends BaseFragment implements View.OnClickListener,
         }
         mVideoList.clear();
         mLastVideoPath = usbDir.getAbsolutePath();
-        updateGridview();
+        mCurrentPathView.setText(mLastVideoPath);
+        parseAndUpdateGridview(false);
     }
 
-    private void updateGridview() {
-        Log.d(TAG, "updateGridview path: " + mLastVideoPath);
+    private void parseAndUpdateGridview(final boolean back) {
+        Log.d(TAG, "parseAndUpdateGridview path: " + mLastVideoPath);
         saveVideoPath(mLastVideoPath);
-        parseVideoDir(mLastVideoPath);
-        mGridAdapter.updateData(mVideoList);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                parseVideoDir(mLastVideoPath);
+                if (back) {
+                    mHandler.post(mBackDirRunnable);
+                } else {
+                    mHandler.post(mEnterDirRunnable);
+                }
+            }
+        }).start();
     }
+
+    private Runnable mEnterDirRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG, "mEnterDirRunnable mTotalList.size()=" + mTotalList.size());
+            updateGridView(false);
+        }
+    };
+
+    private Runnable mBackDirRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG, "mBackDirRunnable mTotalList.size()=" + mTotalList.size());
+            updateGridView(true);
+        }
+    };
+
+    private void updateGridView(boolean back) {
+        mGridAdapter.updateData(mTotalList);
+        if (mTotalList.size() == 0) {
+            mNoContentLayout.setVisibility(View.VISIBLE);
+            mNoContentLayout.requestFocus();
+        } else {
+            int selectIndex = 0;// 进入子文件夹默认位置为第一个
+            if (back && mEnterDirIndexList.size() > 0) {
+                selectIndex = mEnterDirIndexList.get(mEnterDirIndexList.size() - 1);
+                mEnterDirIndexList.remove(mEnterDirIndexList.size() - 1);
+            }
+            // GridView.setSelection 要早于 GridView.requestFocus，
+            // 否则与默认select 0 冲突出现焦点跳跃
+            mGridView.setSelection(selectIndex);
+            mGridView.requestFocus();
+            mNoContentLayout.setVisibility(View.GONE);
+            // 这里是针对切换文件夹时，子文件夹内容数量与父文件夹内容数量相等时，
+            // 且选中位置都为 0 时，GridView 不会回调 onItemSelected 的情况的补充。
+            delayShowSelectEffect();
+        }
+    }
+
+    private void delayShowSelectEffect() {
+        mHandler.postDelayed(mDelayShowSelectEffectRunnable, 100);
+    }
+
+    private Runnable mDelayShowSelectEffectRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG, "mDelayShowSelectEffectRunnable GridView selectedItem="
+                    + mGridView.getSelectedItemPosition()
+                    + ", mGridView.hasFocus=" + mGridView.hasFocus());
+            if (mGridView.hasFocus()) {
+                mGridAdapter.selectView(mGridView.getSelectedView());
+            }
+        }
+    };
 
     private void saveVideoPath(String path) {
         SharedPreferences.Editor editor = mSp.edit();

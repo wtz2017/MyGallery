@@ -23,5 +23,7 @@
 	<dimen name="dp_150">333.3333dp</dimen>
 	<dimen name="dp_200">444.4444dp</dimen>
 	<dimen name="dp_260">577.7778dp</dimen>
+	<dimen name="sp_12">26.6667sp</dimen>
+	<dimen name="sp_14">31.1111sp</dimen>
 	<dimen name="sp_21">46.6667sp</dimen>
 </resources>

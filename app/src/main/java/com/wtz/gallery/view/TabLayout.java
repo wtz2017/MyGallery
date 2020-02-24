@@ -66,6 +66,7 @@ public class TabLayout extends LinearLayout implements TabItem.TabItemFocusChang
 
     private void init() {
         setFocusable(true);
+        setFocusableInTouchMode(true);
         setOrientation(LinearLayout.HORIZONTAL);
         setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
     }

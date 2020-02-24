@@ -15,11 +15,11 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
 import com.wtz.gallery.R;
+import com.wtz.gallery.data.Item;
 import com.wtz.gallery.utils.FileUtil;
 
-import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -27,22 +27,23 @@ public class VideoGridAdapter extends BaseAdapter {
     private final static String TAG = VideoGridAdapter.class.getSimpleName();
 
     private Context mContext;
-    private List<String> mDataList;
+    private List<Item> mDataList = new ArrayList<>();
     private int mItemWidth;
     private AbsListView.LayoutParams mItemLayoutParams;
     private Handler mHandler;
 
     private View mLastView = null;
 
-    public VideoGridAdapter(Context context, List<String> dataList, int itemWidth, Handler handler) {
+    public VideoGridAdapter(Context context, List<Item> dataList, int itemWidth, Handler handler) {
         mContext = context;
-        mDataList = dataList;
+        mDataList.addAll(dataList);
         mItemWidth = itemWidth;
         mHandler = handler;
     }
 
-    public void updateData(List<String> dataList) {
-        mDataList = dataList;
+    public void updateData(List<Item> dataList) {
+        mDataList.clear();
+        mDataList.addAll(dataList);
         notifyDataSetChanged();
     }
 
@@ -73,7 +74,6 @@ public class VideoGridAdapter extends BaseAdapter {
                 mItemLayoutParams.height = mItemLayoutParams.width * 3 / 4;
             }
             convertView.setLayoutParams(mItemLayoutParams);
-            holder.id = (String) getItem(position);
             holder.imageView = (ImageView) convertView.findViewById(R.id.iv_img);
             holder.name = convertView.findViewById(R.id.tv_name);
             holder.cover = convertView.findViewById(R.id.v_cover);
@@ -82,53 +82,41 @@ public class VideoGridAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        String fullPath = (String) getItem(position);
-        holder.id = fullPath;
-        holder.name.setText(stripFileName(fullPath));
-        holder.imageView.setImageResource(R.drawable.icon_video);
-        final ViewHolder finalHolder = holder;
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String path = (String) getItem(position);
-                Log.d(TAG, "to getVideoThumbnail path = " + path);
-                if (!path.equals(finalHolder.id)) {
-                    Log.d(TAG, "before getVideoThumbnail path != finalHolder.id");
-                    return;
+        final Item item = (Item) getItem(position);
+        holder.id = item.path;
+        holder.name.setText(item.name);
+        if (item.type == Item.TYPE_DIR) {
+            holder.imageView.setImageResource(R.drawable.icon_folder);
+        } else if (item.type == Item.TYPE_VIDEO) {
+            holder.imageView.setImageResource(R.drawable.icon_video);
+            final ViewHolder finalHolder = holder;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(TAG, "to getVideoThumbnail path = " + item.path);
+                    if (!item.path.equals(finalHolder.id)) {
+                        Log.d(TAG, "before getVideoThumbnail path != finalHolder.id");
+                        return;
+                    }
+                    final Bitmap bitmap = FileUtil.getVideoThumbnail(item.path);
+                    Log.d(TAG, "getVideoThumbnail bitmap==null? " + (bitmap == null));
+                    if (item.path.equals(finalHolder.id) && bitmap != null) {
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Bitmap scaled = FileUtil.scaleIntoSizeRange(bitmap, mItemLayoutParams.width,
+                                        mItemLayoutParams.height);
+                                finalHolder.imageView.setImageBitmap(scaled);
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "after getVideoThumbnail path != finalHolder.id or bitmap is null");
+                    }
                 }
-                final Bitmap bitmap = FileUtil.getVideoThumbnail((String) getItem(position));
-                Log.d(TAG, "getVideoThumbnail bitmap==null? " + (bitmap == null));
-                if (path.equals(finalHolder.id) && bitmap != null) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Bitmap scaled = FileUtil.scaleIntoSizeRange(bitmap, mItemLayoutParams.width,
-                                    mItemLayoutParams.height);
-                            finalHolder.imageView.setImageBitmap(scaled);
-                        }
-                    });
-                } else {
-                    Log.d(TAG, "after getVideoThumbnail path != finalHolder.id or bitmap is null");
-                }
-            }
-        }).start();
+            }).start();
+        }
 
         return convertView;
-    }
-
-    private String stripFileName(String absolutePath) {
-//        File.separator
-        if (TextUtils.isEmpty(absolutePath) || !absolutePath.contains(File.separator)) {
-            return "Unknown";
-        }
-
-        int start = absolutePath.lastIndexOf(File.separator);
-        int end = absolutePath.lastIndexOf(".");
-        if (start >= end) {
-            return "Unknown";
-        }
-
-        return absolutePath.substring(start + 1, end);
     }
 
     public void selectView(View view) {
@@ -149,7 +137,7 @@ public class VideoGridAdapter extends BaseAdapter {
         holder.cover.setVisibility(View.VISIBLE);
 
         AnimatorSet animSet = new AnimatorSet();
-        float[] values = new float[]{1.0f, 1.1f};
+        float[] values = new float[]{1.0f, 1.08f};
         animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
                 ObjectAnimator.ofFloat(view, "scaleY", values));
         animSet.setDuration(10).start();
@@ -163,7 +151,7 @@ public class VideoGridAdapter extends BaseAdapter {
         holder.cover.setVisibility(View.GONE);
 
         AnimatorSet animSet = new AnimatorSet();
-        float[] values = new float[]{1.1f, 1.0f};
+        float[] values = new float[]{1.08f, 1.0f};
         animSet.playTogether(ObjectAnimator.ofFloat(view, "scaleX", values),
                 ObjectAnimator.ofFloat(view, "scaleY", values));
         animSet.setDuration(10).start();

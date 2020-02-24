@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.wtz.gallery.data.Item;
 import com.wtz.gallery.view.SurfaceVideoView;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class VideoPlayer extends Activity implements View.OnKeyListener {
     public static final String KEY_VIDEO_LIST = "key_video_list";
     public static final String KEY_VIDEO_INDEX = "key_video_index";
 
-    private List<String> mVideoList = new ArrayList<>();
+    private List<Item> mVideoList = new ArrayList<>();
     private int mSize;
     private int mIndex;
 
@@ -57,12 +58,13 @@ public class VideoPlayer extends Activity implements View.OnKeyListener {
         super.onCreate(savedInstanceState);
 
         Intent intent = getIntent();
-        List<String> list = intent.getStringArrayListExtra(KEY_VIDEO_LIST);
+        List<Item> list = intent.getParcelableArrayListExtra(KEY_VIDEO_LIST);
         if (list == null || list.isEmpty()) {
             finish();
             return;
         }
 
+        mVideoList.clear();
         mVideoList.addAll(list);
         mSize = mVideoList.size();
         mIndex = intent.getIntExtra(KEY_VIDEO_INDEX, 0);
@@ -277,7 +279,7 @@ public class VideoPlayer extends Activity implements View.OnKeyListener {
     }
 
     private void showVideo() {
-        String videoPath = mVideoList.get(mIndex);
+        String videoPath = mVideoList.get(mIndex).path;
         Log.d(TAG, "showVideo " + mIndex + ": " + videoPath);
         videoView.openVideo(videoPath);
     }

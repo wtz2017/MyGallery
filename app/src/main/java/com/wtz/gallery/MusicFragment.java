@@ -9,7 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 public class MusicFragment extends BaseFragment {
-    private static final String TAG = "VideoFragment";
+    private static final String TAG = "MusicFragment";
 
     @Override
     public void onAttach(Activity activity) {

@@ -6,17 +6,20 @@
     android:clipChildren="false"
     android:orientation="vertical">
 
+    <TextView
+        android:id="@+id/tv_path"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textColor="#969696"
+        android:textSize="@dimen/sp_12" />
+
     <LinearLayout
         android:id="@+id/head"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/common_margin_top"
+        android:layout_marginTop="@dimen/dp_5"
         android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btn_start_play"
-            style="@style/ButtonStyle"
-            android:text="开始播放" />
 
         <Button
             android:id="@+id/btn_select_file"
@@ -35,15 +38,51 @@
 
     </LinearLayout>
 
-    <!-- 在上述父控件LinearLayout中设置 clipChildren = false, clipToPadding = false, 避免边缘的子View放大时被父View遮挡 -->
-    <com.wtz.gallery.view.ScaleGridView
-        android:id="@+id/gridView_video"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="10dp"
-        android:clipChildren="false"
-        android:focusable="true"
-        android:gravity="center"
-        android:listSelector="@android:color/transparent"
-        android:stretchMode="columnWidth" />
+        android:layout_marginBottom="@dimen/dp_10"
+        android:clipChildren="false">
+
+        <!-- 在上述父控件LinearLayout中设置 clipChildren = false, clipToPadding = false, 避免边缘的子View放大时被父View遮挡 -->
+        <com.wtz.gallery.view.ScaleGridView
+            android:id="@+id/gridView_video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp"
+            android:clipChildren="false"
+            android:focusable="true"
+            android:gravity="center"
+            android:listSelector="@android:color/transparent"
+            android:stretchMode="columnWidth" />
+
+        <LinearLayout
+            android:id="@+id/ll_no_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_video_in_this_folder"
+                android:textColor="#ffffff"
+                android:textSize="@dimen/sp_21" />
+
+            <Button
+                android:id="@+id/btn_no_content_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_16"
+                android:background="@drawable/button_bg"
+                android:paddingLeft="@dimen/button_padding"
+                android:paddingRight="@dimen/button_padding"
+                android:text="返回"
+                android:textColor="#ffffff"
+                android:textSize="@dimen/button_textsize" />
+        </LinearLayout>
+
+    </FrameLayout>
 </LinearLayout>

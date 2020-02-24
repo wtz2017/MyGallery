@@ -169,17 +169,7 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
             public void onFocusChange(View v, boolean hasFocus) {
                 Log.d(TAG, "mGridView onFocusChange hasFocus=" + hasFocus);
                 if (hasFocus) {
-//                    mGridView.setSelection(0);
-//                    mGridView.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
-                    mGridView.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (mGridView.hasFocus()) {
-                                mImageGridAdapter.selectView(mGridView.getChildAt(mGridView.getSelectedItemPosition()));
-//                                mGridView.selectView(mGridView.getSelectedView());
-                            }
-                        }
-                    }, 200);
+                    delayShowSelectEffect();
                 } else {
                     mImageGridAdapter.selectView(null);
                 }
@@ -187,6 +177,22 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
         });
         mGridView.setOnKeyListener(this);
     }
+
+    private void delayShowSelectEffect() {
+        mHandler.postDelayed(mDelayShowSelectEffectRunnable, 100);
+    }
+
+    private Runnable mDelayShowSelectEffectRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG, "mDelayShowSelectEffectRunnable GridView selectedItem="
+                    + mGridView.getSelectedItemPosition()
+                    + ", mGridView.hasFocus=" + mGridView.hasFocus());
+            if (mGridView.hasFocus()) {
+                mImageGridAdapter.selectView(mGridView.getSelectedView());
+            }
+        }
+    };
 
     private void parseImageDir(String imagePath) {
         if (TextUtils.isEmpty(imagePath)) {

@@ -82,7 +82,7 @@ public class MainActivity extends FragmentActivity
                 public void run() {
                     mTabLayout.select(0);
                 }
-            }, 200);
+            }, 100);
         }
     }
 
@@ -136,6 +136,7 @@ public class MainActivity extends FragmentActivity
 
     @Override
     public void selectTab(int index) {
+        Log.d(TAG, "selectTab " + index);
         mTabLayout.select(index);
     }
 

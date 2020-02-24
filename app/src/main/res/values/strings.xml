@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">媒体播放器</string>
+    <string name="no_video_in_this_folder">此文件夹内没有视频哦</string>
 </resources>

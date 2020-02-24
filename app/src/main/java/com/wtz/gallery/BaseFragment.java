@@ -5,7 +5,7 @@ import android.support.v4.app.Fragment;
 import android.util.Log;
 
 public abstract class BaseFragment extends Fragment {
-    private static final String TAG = "VideoFragment";
+    private static final String TAG = "BaseFragment";
 
     private TabControlListener mTabControlListener;
 

@@ -24,12 +24,12 @@
             android:id="@+id/tv_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ellipsize="marquee"
+            android:ellipsize="end"
             android:gravity="center"
-            android:singleLine="true"
+            android:maxLines="1"
             android:text="视频名称"
             android:textColor="#ffffff"
-            android:textSize="@dimen/sp_21" />
+            android:textSize="@dimen/sp_14" />
 
     </LinearLayout>
 
