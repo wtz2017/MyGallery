@@ -75,7 +75,8 @@ public class MusicFragment extends BaseFragment {
     }
 
     @Override
-    protected void selectTab() {
-        selectTabIndex(2);
+    protected int getSelfTabIndex() {
+        return 2;
     }
+
 }

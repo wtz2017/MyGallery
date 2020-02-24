@@ -15,13 +15,38 @@ public abstract class BaseFragment extends Fragment {
         super.onCreate(savedInstanceState);
     }
 
-    protected abstract void selectTab();
+    protected abstract int getSelfTabIndex();
+
+    protected void selectSelfTab() {
+        selectTabIndex(getSelfTabIndex());
+    }
+
+    protected void selectLeftTab() {
+        int index = getSelfTabIndex() - 1;
+        if (index >= 0) {
+            selectTabIndex(index);
+        }
+    }
+
+    protected void selectRightTab() {
+        int index = getSelfTabIndex() + 1;
+        if (index < getTabCount()) {
+            selectTabIndex(index);
+        }
+    }
 
     protected void selectTabIndex(int index) {
         if (mTabControlListener == null) {
             mTabControlListener = (TabControlListener) getActivity();
         }
         mTabControlListener.selectTab(index);
+    }
+
+    protected int getTabCount() {
+        if (mTabControlListener == null) {
+            mTabControlListener = (TabControlListener) getActivity();
+        }
+        return mTabControlListener.getTabCount();
     }
 
     @Override

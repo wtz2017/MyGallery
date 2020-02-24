@@ -298,15 +298,34 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
                     // 过滤ACTION_DOWN 是为了只处理从谁开始落下按键的情况
                     if (v.getId() == R.id.btn_start_play || v.getId() == R.id.btn_select_file ||
                             v.getId() == R.id.btn_usb_default_img || v.getId() == R.id.btn_sdcard_default_img) {
-                        selectTab();
+                        selectSelfTab();
                         mGridView.scrollTo(0, 0);
                         return true;
                     }
-                    if (v.getId() == R.id.gridView_image ) {
+                    if (v.getId() == R.id.gridView_image) {
                         int gridIndex = mGridView.getSelectedItemPosition();
                         Log.d(TAG, "onKey gridIndex=" + gridIndex);
                         if (gridIndex >= 0 && gridIndex <= 3) {
                             mStartPlayButton.requestFocus();
+                            return true;
+                        }
+                    }
+                }
+                break;
+
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (v.getId() == R.id.btn_usb_default_img) {
+                        selectRightTab();
+                        return true;
+                    }
+                    if (v.getId() == R.id.gridView_image) {
+                        int gridIndex = mGridView.getSelectedItemPosition();
+                        Log.d(TAG, "onKey KEYCODE_DPAD_RIGHT gridIndex=" + gridIndex
+                                + ", mGridView.getNumColumn=" + mGridView.getNumColumns());
+                        if ((gridIndex + 1) % mGridView.getNumColumns() == 0
+                                || gridIndex == mGridView.getCount() - 1) {
+                            selectRightTab();//TODO
                             return true;
                         }
                     }
@@ -408,8 +427,8 @@ public class ImageFragment extends BaseFragment implements View.OnClickListener,
     }
 
     @Override
-    protected void selectTab() {
-        selectTabIndex(0);
+    protected int getSelfTabIndex() {
+        return 0;
     }
 
 }

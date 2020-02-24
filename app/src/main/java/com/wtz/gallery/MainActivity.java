@@ -136,8 +136,13 @@ public class MainActivity extends FragmentActivity
 
     @Override
     public void selectTab(int index) {
-        Log.d(TAG, "selectTab " + index);
+        Log.d(TAG, "selectSelfTab " + index);
         mTabLayout.select(index);
+    }
+
+    @Override
+    public int getTabCount() {
+        return mTabTitleList.size();
     }
 
     @Override
